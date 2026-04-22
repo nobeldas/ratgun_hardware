@@ -24,7 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "arduino_ros_bridge = arduino_ros_bridge.arduino_ros_bridge:main"
+            "arduino_ros_bridge = arduino_ros_bridge.arduino_ros_bridge:main", 
+            "control_led_enter = arduino_ros_bridge.control_led_enter:main"
         ],
     },
 )
