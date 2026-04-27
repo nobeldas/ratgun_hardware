@@ -9,7 +9,12 @@ class TurretSerialBridge(Node):
         super().__init__('arduino_ros_bridge')
         
         # Update this to match your Arduino's port (e.g., /dev/ttyACM0, /dev/ttyUSB0, or COM3)
-        port_name = '/dev/ttyACM0' 
+
+        self.declare_parameter('port_name', '/dev/ttyACM0' )
+        port_name = self.get_parameter('port_name').get_parameter_value().string_value
+
+        # --ros_args -p port_name:=/dev/tty , add this after the ros2 run paackaage node 
+
         baud_rate = 115200
         
         try:
