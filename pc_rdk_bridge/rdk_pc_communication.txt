@@ -1,0 +1,22 @@
+1) first match the ip address 
+
+shell: 
+ip a
+
+tell about the interface and ip address, now match the ip address of the two interfaces, 
+assign ip address to an interface
+
+shell: 
+sudo ip addr flush dev enx00e04c680079
+sudo ip addr add 192.168.127.20/24 dev enx00e04c680079
+
+in rdk side its already a static ip, 192.168.127.10/24, see both the ips have same first 3 digits, 
+
+
+2) match ros domain 
+shell:
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export ROS_DOMAIN_ID=10
+export ROS_LOCALHOST_ONLY=0
+
+done!
