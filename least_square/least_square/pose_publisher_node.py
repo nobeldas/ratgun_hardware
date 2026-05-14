@@ -3,6 +3,11 @@ from rclpy.node import Node
 from geometry_msgs.msg import Point
 import pyautogui
 
+try:
+    from .least_square import filter_coordinate
+except ImportError:
+    from least_square import filter_coordinate
+
 class MouseTracker(Node):
     def __init__(self):
         super().__init__('mouse_tracker')
@@ -11,10 +16,11 @@ class MouseTracker(Node):
 
     def publish_mouse_position(self):
         x, y = pyautogui.position()
+        predicted_x, predicted_y = filter_coordinate(float(x), float(y))
 
         msg = Point()
-        msg.x = float(x)
-        msg.y = float(y)
+        msg.x = predicted_x
+        msg.y = predicted_y
         msg.z = 0.0
 
         self.publisher_.publish(msg)

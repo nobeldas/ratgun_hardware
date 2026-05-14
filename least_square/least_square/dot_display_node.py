@@ -43,7 +43,7 @@ class DotDisplay(Node):
     def update_ui(self):
         self.root.geometry(f"+{self.x + a}+{self.y + b}")
         rclpy.spin_once(self, timeout_sec=0)
-        self.root.after(10, self.update_ui)
+        self.root.after(1, self.update_ui)   # change the number to add delay. 
 
     def close_app(self, event=None):
         self.cleanup()
