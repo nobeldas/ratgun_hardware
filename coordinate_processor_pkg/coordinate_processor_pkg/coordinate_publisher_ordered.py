@@ -35,6 +35,10 @@ class ImageCloudRedDetector(Node):
         self.cloud_width = self.image_width // self.downsample_step
         self.cloud_height = self.image_height // self.downsample_step
 
+        # 5x5 window in point cloud grid
+        self.window_size = 5
+        self.window_radius = self.window_size // 2
+
         self.latest_cloud = None
 
         self.bridge = CvBridge()
@@ -136,26 +140,56 @@ class ImageCloudRedDetector(Node):
         if cy_small < 0 or cy_small >= self.cloud_height:
             return None
 
-        index = cy_small * self.cloud_width + cx_small
-
-        points = pc2.read_points(
+        points = list(pc2.read_points(
             cloud_msg,
             field_names=("x", "y", "z"),
             skip_nans=False
-        )
+        ))
 
-        for i, p in enumerate(points):
-            if i == index:
+        sx = 0.0
+        sy = 0.0
+        sz = 0.0
+        n = 0
+
+        for dy in range(-self.window_radius, self.window_radius + 1):
+            for dx in range(-self.window_radius, self.window_radius + 1):
+
+                px = cx_small + dx
+                py = cy_small + dy
+
+                if px < 0 or px >= self.cloud_width:
+                    continue
+
+                if py < 0 or py >= self.cloud_height:
+                    continue
+
+                index = py * self.cloud_width + px
+
+                if index < 0 or index >= len(points):
+                    continue
+
+                p = points[index]
+
                 x = float(p[0])
                 y = float(p[1])
                 z = float(p[2])
 
                 if math.isnan(x) or math.isnan(y) or math.isnan(z):
-                    return None
+                    continue
 
-                return x, y, z
+                sx += x
+                sy += y
+                sz += z
+                n += 1
 
-        return None
+        if n == 0:
+            return None
+
+        xc = float(sx / n)
+        yc = float(sy / n)
+        zc = float(sz / n)
+
+        return xc, yc, zc
 
     def publish_point(self, cloud_msg, x, y, z):
         out = PointStamped()
@@ -208,7 +242,7 @@ class ImageCloudRedDetector(Node):
         xyz = self.get_xyz_from_cloud(self.latest_cloud, cx, cy)
 
         if xyz is None:
-            self.get_logger().warn("Invalid 3D point at red center")
+            self.get_logger().warn("Invalid 3D points around red center")
             return
 
         x, y, z = xyz
@@ -218,7 +252,7 @@ class ImageCloudRedDetector(Node):
 
         self.get_logger().info(
             f"Image center: cx={cx}, cy={cy} | "
-            f"3D: x={x:.3f}, y={y:.3f}, z={z:.3f}"
+            f"3D avg: x={x:.3f}, y={y:.3f}, z={z:.3f}"
         )
 
 
