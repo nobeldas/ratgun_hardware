@@ -5,9 +5,9 @@ import sys
 import tkinter as tk
 
 try:
-    from .least_square import filter_coordinate
+    from .ukf_diff_drive import filter_coordinate
 except ImportError:
-    from least_square import filter_coordinate
+    from ukf_diff_drive import filter_coordinate
 
 
 # Quick tuning values. Change these defaults, then run the simulator again.

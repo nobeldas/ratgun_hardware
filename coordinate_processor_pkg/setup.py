@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'aruco_detection'
+package_name = 'coordinate_processor_pkg'
 
 setup(
     name=package_name,
@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "cam_obj_tf = aruco_detection.publish_camobj_tf:main"
+            'coordinate_publisher = coordinate_processor_pkg.coordinate_publisher:main'
         ],
     },
 )
