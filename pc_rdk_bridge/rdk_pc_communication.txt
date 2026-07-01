@@ -70,8 +70,32 @@ JUST SETUP THE ETHERNET, DONT KEEP ANY OTHER CONNECTION ACTIVE,
 
 IN RVIZ:
 
- fixed frame:  camera_link
-  
+    fixed frame:  camera_link
+
+
+FOR APRIL TAGS:
+
+    source /opt/tros/humble/setup.bash
+    ros2 launch hobot_stereonet stereonet_model_web_visual_v2.4.launch.py \
+        stereonet_pub_web:=False \
+        publish_pcd_enabled:=False \
+        publish_visual_enabled:=False \
+        publish_origin_enable:=False \
+        publish_rectify_bgr:=True \
+        mipi_image_width:=1280 \
+        mipi_image_height:=720 \
+        mipi_sub_image_width:=1280 \
+        mipi_sub_image_height:=720 \
+        mipi_image_framerate:=30.0 \
+        mipi_gdc_enable:=True \
+        log_level:=warn 
+    
+    
+    ros2 run apriltag_ros apriltag_node --ros-args \
+        --params-file april_tags.yaml \
+        -r image_rect:=/StereoNetNode/rectify_left_image \
+        -r /StereoNetNode/camera_info:=/StereoNetNode/rectify_left_image/camera_info
+
 
 
 

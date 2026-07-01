@@ -24,7 +24,7 @@ class TurretTeleopNode(Node):
         self.print_instructions()
 
         # Create a timer that runs the control loop 20 times per second (20Hz)
-        self.timer = self.create_timer(0.05, self.control_loop)
+        self.timer = self.create_timer(0.01, self.control_loop)
 
         # Start the pynput keyboard listener in the background
         self.listener = keyboard.Listener(
@@ -35,7 +35,7 @@ class TurretTeleopNode(Node):
     def print_instructions(self):
         print("""
         ------------------------------------
-        🎯 MANUAL TURRET OVERRIDE ACTIVE 🎯
+         MANUAL TURRET OVERRIDE ACTIVE 
         ------------------------------------
         UP / DOWN ARROWS    : Tilt Up / Down
         LEFT / RIGHT ARROWS : Pan Left / Right
@@ -51,7 +51,7 @@ class TurretTeleopNode(Node):
         msg.data = [self.pan, self.tilt, self.laser_state]
         self.publisher_.publish(msg)
         
-        fire_status = "🔥 FIRE! 🔥" if self.laser_state == 1 else "   SAFE   "
+        fire_status = " FIRE! " if self.laser_state == 1 else "   SAFE   "
         sys.stdout.write(f"\rAiming -> Pan: {self.pan:3}° | Tilt: {self.tilt:3}° | Blaster: {fire_status}")
         sys.stdout.flush()
 
@@ -76,7 +76,7 @@ class TurretTeleopNode(Node):
         
         # Check Tilt
         if keyboard.Key.up in self.pressed_keys:
-            self.tilt = min(180, self.tilt + self.step)
+            self.tilt = min(111, self.tilt + self.step)
             moved = True
         if keyboard.Key.down in self.pressed_keys:
             self.tilt = max(0, self.tilt - self.step)
