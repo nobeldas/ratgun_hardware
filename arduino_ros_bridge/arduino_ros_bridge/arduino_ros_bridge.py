@@ -16,12 +16,11 @@ class TurretSerialBridge(Node):
         # --ros_args -p port_name:=/dev/tty , add this after the ros2 run paackaage node 
 
         baud_rate = 115200
+        self.port_name = port_name
+        self.baud_rate = baud_rate
+        self.serial_port = None
         
-        try:
-            self.serial_port = serial.Serial(port_name, baud_rate, timeout=0.01)
-            self.get_logger().info(f"Connected to Arduino on {port_name}")
-        except serial.SerialException as e:
-            self.get_logger().error(f"Failed to connect to Arduino: {e}")
+        if not self.connect_serial():
             raise SystemExit
 
         # We keep the QoS queue size small (10) to drop old packets.
@@ -33,9 +32,35 @@ class TurretSerialBridge(Node):
             10 
         )
 
+        self.reconnect_timer = self.create_timer(1.0, self.reconnect_if_needed)
+
+    def connect_serial(self):
+        try:
+            self.serial_port = serial.Serial(self.port_name, self.baud_rate, timeout=0.01)
+            self.get_logger().info(f"Connected to Arduino on {self.port_name}")
+            return True
+        except serial.SerialException as e:
+            self.serial_port = None
+            self.get_logger().error(f"Failed to connect to Arduino on {self.port_name}: {e}")
+            return False
+
+    def reconnect_if_needed(self):
+        if self.serial_port is None or not self.serial_port.is_open:
+            self.get_logger().warn(f"Trying to reconnect to Arduino on {self.port_name}")
+            self.connect_serial()
+
+    def close_serial(self):
+        if self.serial_port is not None and self.serial_port.is_open:
+            self.serial_port.close()
+        self.serial_port = None
+
     def command_callback(self, msg):
         # Expecting an array of exactly 3 integers: [pan, tilt, laser]
         if len(msg.data) == 3:
+            if self.serial_port is None or not self.serial_port.is_open:
+                self.get_logger().warn("Arduino serial port is not connected; dropping command")
+                return
+
             pan, tilt, laser = msg.data
             
             # Clamp the values. 
@@ -49,7 +74,11 @@ class TurretSerialBridge(Node):
             packet = struct.pack('4B', 255, pan_byte, tilt_byte, laser_byte)
             
             # Write directly to the hardware
-            self.serial_port.write(packet)
+            try:
+                self.serial_port.write(packet)
+            except serial.SerialException as e:
+                self.get_logger().error(f"Serial write failed: {e}")
+                self.close_serial()
         else:
             self.get_logger().warn("Invalid array length. Expected [pan, tilt, laser].")
 
@@ -62,7 +91,7 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        bridge_node.serial_port.close()
+        bridge_node.close_serial()
         bridge_node.destroy_node()
         rclpy.shutdown()
 

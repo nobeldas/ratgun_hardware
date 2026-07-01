@@ -1,0 +1,101 @@
+Communication part is in ipad notes: "RDK S100 and PC Communication"
+
+RUN EVERYTHING IN ROOT :
+sudo -i
+
+
+CHECK CAMERA CONNECTON
+i2cdetect -r -y 1
+i2cdetect -r -y 2
+
+
+
+DEPTH CAMERA LAUNCH COMMAND
+
+source /opt/tros/humble/setup.bash
+ros2 launch hobot_stereonet stereonet_model_web_visual_v2.4.launch.py \
+    stereonet_pub_web:=False \
+    publish_pcd_enabled:=True \
+    publish_visual_enabled:=False \
+    publish_origin_enable:=False \
+    publish_rectify_bgr:=True \
+    mipi_image_width:=640 \
+    mipi_image_height:=352 \
+    mipi_sub_image_width:=640 \
+    mipi_sub_image_height:=352 \
+    mipi_image_framerate:=30.0 \
+    mipi_gdc_enable:=True \
+    pointcloud_downsample_step:=2 \
+    pointcloud_depth_max:=4.0 \
+    pcl_filter_enable:=False \
+    speckle_filter_enable:=False \
+    save_result_flag:=False \
+    log_level:=warn
+
+
+ALTERNATIVE LAUNCH COMMAND 
+
+source /opt/tros/humble/setup.bash
+ros2 launch hobot_stereonet stereonet_model_web_visual_component_v2.4.launch.py \
+    stereonet_pub_web:=False \
+    publish_pcd_enabled:=True \
+    publish_visual_enabled:=False \
+    publish_origin_enable:=False \
+    publish_rectify_bgr:=True \
+    mipi_image_width:=640 \
+    mipi_image_height:=352 \
+    mipi_sub_image_width:=640 \
+    mipi_sub_image_height:=352 \
+    mipi_image_framerate:=30.0 \
+    mipi_gdc_enable:=True \
+    pointcloud_downsample_step:=2 \
+    pointcloud_depth_max:=4.0 \
+    pcl_filter_enable:=False \
+    speckle_filter_enable:=False \
+    save_result_flag:=False \
+    log_level:=warn
+
+
+JUST SETUP THE ETHERNET, DONT KEEP ANY OTHER CONNECTION ACTIVE, 
+
+  Run on the SBC:
+
+    sudo nmcli radio wifi off
+    Verify:
+    ip -br link show wlan0
+    Then restart StereoNet and RViz.
+    To turn Wi-Fi back on:
+    sudo nmcli radio wifi on
+
+
+IN RVIZ:
+
+    fixed frame:  camera_link
+
+
+FOR APRIL TAGS:
+
+    source /opt/tros/humble/setup.bash
+    ros2 launch hobot_stereonet stereonet_model_web_visual_v2.4.launch.py \
+        stereonet_pub_web:=False \
+        publish_pcd_enabled:=False \
+        publish_visual_enabled:=False \
+        publish_origin_enable:=False \
+        publish_rectify_bgr:=True \
+        mipi_image_width:=1280 \
+        mipi_image_height:=720 \
+        mipi_sub_image_width:=1280 \
+        mipi_sub_image_height:=720 \
+        mipi_image_framerate:=30.0 \
+        mipi_gdc_enable:=True \
+        log_level:=warn 
+    
+    
+    ros2 run apriltag_ros apriltag_node --ros-args \
+        --params-file april_tags.yaml \
+        -r image_rect:=/StereoNetNode/rectify_left_image \
+        -r /StereoNetNode/camera_info:=/StereoNetNode/rectify_left_image/camera_info
+
+
+
+
