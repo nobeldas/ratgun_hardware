@@ -89,6 +89,27 @@ FOR APRIL TAGS:
         mipi_image_framerate:=30.0 \
         mipi_gdc_enable:=True \
         log_level:=warn 
+
+    
+
+    source /opt/tros/humble/setup.bash
+    ros2 launch hobot_stereonet stereonet_model_web_visual_v2.4.launch.py \
+        stereonet_pub_web:=False \
+        publish_pcd_enabled:=False \
+        publish_visual_enabled:=False \
+        publish_origin_enable:=False \
+        publish_rectify_bgr:=True \
+        mipi_image_width:=640 \
+        mipi_image_height:=352 \
+        mipi_sub_image_width:=640 \
+        mipi_sub_image_height:=352 \
+        mipi_image_framerate:=30.0 \
+        mipi_gdc_enable:=True \
+        log_level:=warn 
+
+
+
+
     
     
     ros2 run apriltag_ros apriltag_node --ros-args \

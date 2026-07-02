@@ -16,7 +16,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'config_file',
-            default_value='default_conf_file',  # actually the file is in coordinate_processor_pkg/config/ 
+            default_value=default_conf_file,  # actually the file is in coordinate_processor_pkg/config/ 
             description='give the config file path with the file name'
         ),
 
