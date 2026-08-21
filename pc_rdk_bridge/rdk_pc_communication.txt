@@ -1,3 +1,11 @@
+same network ip
+ssh sunrise@192.168.0.107
+
+wifi hotspot, 
+ssh sunrise@10.55.0.1
+
+pass: 330974
+
 Communication part is in ipad notes: "RDK S100 and PC Communication"
 
 RUN EVERYTHING IN ROOT :
