@@ -1,7 +1,7 @@
 same network ip
 ssh sunrise@192.168.0.107
 
-wifi hotspot, 
+wifi hotspot
 ssh sunrise@10.55.0.1
 
 pass: 330974
