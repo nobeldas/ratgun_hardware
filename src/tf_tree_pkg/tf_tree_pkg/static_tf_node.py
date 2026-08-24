@@ -16,6 +16,7 @@ class StaticTFNode(Node):
         self.tf_broadcaster = StaticTransformBroadcaster(self)
 
         self.a3 = 1
+        self.bc = [0.0,-1.0, 0.0] # base_link -> camera_link
 
         # base_link -> lidar_link
         # servo2 -> gun_end
@@ -25,6 +26,13 @@ class StaticTFNode(Node):
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]
         ])
+        #base_link -> camera_link
+        T_b_c = np.array([
+            [1.0, 0.0, 0.0, self.bc[0]],
+            [0.0, 1.0, 0.0, self.bc[1]],
+            [0.0, 0.0, 1.0, self.bc[2]],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
 
         tf_s2_g = matrix_to_tf(
             T_s2_g,
@@ -32,8 +40,15 @@ class StaticTFNode(Node):
             'gun_end_link',
             self.get_clock().now().to_msg()
         )
+        
+        tf_b_c = matrix_to_tf(
+                    T_b_c,
+                    'base_link',
+                    'camera_link',
+                    self.get_clock().now().to_msg()
+                )
 
-        self.tf_broadcaster.sendTransform(tf_s2_g)
+        self.tf_broadcaster.sendTransform([tf_s2_g, tf_b_c])
 
 
 def main(args=None):
