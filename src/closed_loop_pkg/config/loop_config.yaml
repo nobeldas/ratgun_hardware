@@ -1,0 +1,20 @@
+tf_position_publisher:
+  ros__parameters:
+    target_frame: base_link
+    source_frame: target_tf
+    target_topic: /target_tf_position
+
+gun_tf_matrix_publisher:
+  ros__parameters:
+    target_frame: base_link
+    source_frame: gun_end_link
+    output_topic: /gun_transform_matrix
+
+pan_tilt_node:
+  ros__parameters:
+    target_topic: /target_tf_position
+    output_topic: /gun_transform_matrix
+    loop_topic: /pan_tilt_command
+    a1: 1.0
+    a2: 1.0
+    a3: 1.0
