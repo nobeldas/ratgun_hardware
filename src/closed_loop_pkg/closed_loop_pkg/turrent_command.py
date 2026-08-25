@@ -9,7 +9,7 @@ class TurretCommandNode(Node):
     def __init__(self):
         super().__init__('turret_command_node')
 
-        self.declare_parameter('pan_tilt_topic', '/pan_tilt_commands')
+        self.declare_parameter('pan_tilt_topic', '/pan_tilt_command')
         self.declare_parameter('fire_topic', '/fire_command')
         self.declare_parameter('turret_topic', '/turret_commands')
 
@@ -61,7 +61,15 @@ class TurretCommandNode(Node):
             return
 
         command = Int32MultiArray()
-        command.data = [self.pan, self.tilt, self.fire]
+
+        hardware_pan = max(0, min(180, self.pan + 90))
+        hardware_tilt = max(0, min(111, self.tilt + 90))
+
+        command.data = [
+            hardware_pan,
+            hardware_tilt,
+            self.fire,
+        ]
         self.command_publisher.publish(command)
 
 def main(args=None):

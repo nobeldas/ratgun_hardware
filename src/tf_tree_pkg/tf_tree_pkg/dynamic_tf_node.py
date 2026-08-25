@@ -21,8 +21,8 @@ class DynamicTFNode(Node):
             0.02,
             self.publish_tf
         )
-        self.pan = 90  # Centered
-        self.tilt = 90  # Centered
+        self.pan = 0  # Centered
+        self.tilt = 0  # Centered
 
         self.declare_parameter('a1', 1.0)
         self.declare_parameter('a2', 1.0)
@@ -45,8 +45,8 @@ class DynamicTFNode(Node):
     def publish_tf(self):
 
         stamp = self.get_clock().now().to_msg()
-        pan = math.radians(self.pan - 90)
-        tilt = math.radians(self.tilt - 90)
+        pan = math.radians(self.pan)
+        tilt = math.radians(self.tilt)
 
         # base_link -> servo1
         T_b_s1 = np.array([
