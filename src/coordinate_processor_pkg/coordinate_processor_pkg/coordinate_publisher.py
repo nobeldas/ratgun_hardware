@@ -18,9 +18,29 @@ class RedPointDetector(Node):
     def __init__(self):
         super().__init__("red_point_detector")
 
-        self.cloud_topic = "/StereoNetNode/stereonet_pointcloud2"
-        self.point_topic = "/red_object_center"
-        self.child_frame = "target_tf"
+        self.declare_parameter(
+            "cloud_topic", "/StereoNetNode/stereonet_pointcloud2")
+        self.declare_parameter("point_topic", "/red_object_center")
+        self.declare_parameter("child_frame", "target_tf")
+        self.declare_parameter("red_min", 120)
+        self.declare_parameter("green_max", 80)
+        self.declare_parameter("blue_max", 80)
+
+        self.cloud_topic = self.get_parameter("cloud_topic").value
+        self.point_topic = self.get_parameter("point_topic").value
+        self.child_frame = self.get_parameter("child_frame").value
+        self.red_min = self.get_parameter("red_min").value
+        self.green_max = self.get_parameter("green_max").value
+        self.blue_max = self.get_parameter("blue_max").value
+
+        for name, value in (
+            ("red_min", self.red_min),
+            ("green_max", self.green_max),
+            ("blue_max", self.blue_max),
+        ):
+            if not 0 <= value <= 255:
+                raise ValueError(
+                    f'Parameter "{name}" must be between 0 and 255')
 
         self.sub = self.create_subscription(
             PointCloud2,
@@ -46,7 +66,6 @@ class RedPointDetector(Node):
         Bytes are usually:
         B, G, R, A
         """
-
         s = struct.pack("f", float(rgb_float))
         b, g, r, a = struct.unpack("BBBB", s)
 
@@ -54,14 +73,17 @@ class RedPointDetector(Node):
 
     def is_red(self, r, g, b):
         """
-        Simple red filter.
+        Return whether a point passes the red filter.
 
         Red point condition:
         R should be high.
         G and B should be low.
         """
-
-        return r > 120 and g < 80 and b < 80
+        return (
+            r > self.red_min
+            and g < self.green_max
+            and b < self.blue_max
+        )
 
     def publish_red_point(self, msg, xc, yc, zc):
         out = PointStamped()

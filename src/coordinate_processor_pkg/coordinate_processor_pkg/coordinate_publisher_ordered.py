@@ -20,23 +20,69 @@ from tf2_ros import TransformBroadcaster
 class ImageCloudRedDetector(Node):
 
     def __init__(self):
-        super().__init__("image_cloud_red_detector")
+        super().__init__("ordered_red_point_detector")
 
-        self.image_topic = "/StereoNetNode/rectify_left_image"
-        self.cloud_topic = "/StereoNetNode/stereonet_pointcloud2"
+        self.declare_parameter(
+            "image_topic", "/StereoNetNode/rectify_left_image")
+        self.declare_parameter(
+            "cloud_topic", "/StereoNetNode/stereonet_pointcloud2")
+        self.declare_parameter(
+            "output_topic", "/red_object_center_image_cloud")
+        self.declare_parameter("child_frame", "target_tf")
+        self.declare_parameter("image_width", 640)
+        self.declare_parameter("image_height", 352)
+        self.declare_parameter("downsample_step", 2)
+        self.declare_parameter("window_size", 5)
+        self.declare_parameter("min_contour_area", 20.0)
+        self.declare_parameter("lower_red_hsv_1", [0, 100, 80])
+        self.declare_parameter("upper_red_hsv_1", [10, 255, 255])
+        self.declare_parameter("lower_red_hsv_2", [170, 100, 80])
+        self.declare_parameter("upper_red_hsv_2", [179, 255, 255])
 
-        self.output_topic = "/red_object_center_image_cloud"
-        self.child_frame = "target_tf"
+        self.image_topic = self.get_parameter("image_topic").value
+        self.cloud_topic = self.get_parameter("cloud_topic").value
+        self.output_topic = self.get_parameter("output_topic").value
+        self.child_frame = self.get_parameter("child_frame").value
+        self.image_width = self.get_parameter("image_width").value
+        self.image_height = self.get_parameter("image_height").value
+        self.downsample_step = self.get_parameter("downsample_step").value
+        self.window_size = self.get_parameter("window_size").value
+        self.min_contour_area = self.get_parameter(
+            "min_contour_area").value
+        self.lower_red_hsv_1 = self._get_hsv_parameter("lower_red_hsv_1")
+        self.upper_red_hsv_1 = self._get_hsv_parameter("upper_red_hsv_1")
+        self.lower_red_hsv_2 = self._get_hsv_parameter("lower_red_hsv_2")
+        self.upper_red_hsv_2 = self._get_hsv_parameter("upper_red_hsv_2")
 
-        self.image_width = 640
-        self.image_height = 352
-        self.downsample_step = 2
+        for lower, upper in (
+            (self.lower_red_hsv_1, self.upper_red_hsv_1),
+            (self.lower_red_hsv_2, self.upper_red_hsv_2),
+        ):
+            if np.any(lower > upper):
+                raise ValueError(
+                    "Each lower HSV value must be less than or equal to "
+                    "its upper HSV value")
+
+        if self.image_width <= 0 or self.image_height <= 0:
+            raise ValueError("Image width and height must be positive")
+        if self.downsample_step <= 0:
+            raise ValueError('Parameter "downsample_step" must be positive')
+        if (
+            self.image_width % self.downsample_step != 0
+            or self.image_height % self.downsample_step != 0
+        ):
+            raise ValueError(
+                "Image dimensions must be divisible by downsample_step")
+        if self.window_size <= 0 or self.window_size % 2 == 0:
+            raise ValueError(
+                'Parameter "window_size" must be a positive odd number')
+        if self.min_contour_area < 0.0:
+            raise ValueError(
+                'Parameter "min_contour_area" cannot be negative')
 
         self.cloud_width = self.image_width // self.downsample_step
         self.cloud_height = self.image_height // self.downsample_step
 
-        # 5x5 window in point cloud grid
-        self.window_size = 5
         self.window_radius = self.window_size // 2
 
         self.latest_cloud = None
@@ -67,6 +113,22 @@ class ImageCloudRedDetector(Node):
 
         self.get_logger().info("Image + PointCloud red detector started")
 
+    def _get_hsv_parameter(self, name):
+        values = self.get_parameter(name).value
+
+        if len(values) != 3:
+            raise ValueError(
+                f'Parameter "{name}" must contain exactly three values')
+        if not 0 <= values[0] <= 179:
+            raise ValueError(
+                f'Parameter "{name}" hue must be between 0 and 179')
+        if any(value < 0 or value > 255 for value in values[1:]):
+            raise ValueError(
+                f'Parameter "{name}" saturation and value must be '
+                "between 0 and 255")
+
+        return np.asarray(values, dtype=np.uint8)
+
     def cloud_callback(self, msg):
         self.latest_cloud = msg
 
@@ -94,14 +156,10 @@ class ImageCloudRedDetector(Node):
     def detect_red_center(self, frame):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        lower_red1 = np.array([0, 100, 80])
-        upper_red1 = np.array([10, 255, 255])
-
-        lower_red2 = np.array([170, 100, 80])
-        upper_red2 = np.array([179, 255, 255])
-
-        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        mask1 = cv2.inRange(
+            hsv, self.lower_red_hsv_1, self.upper_red_hsv_1)
+        mask2 = cv2.inRange(
+            hsv, self.lower_red_hsv_2, self.upper_red_hsv_2)
 
         mask = mask1 + mask2
 
@@ -117,7 +175,7 @@ class ImageCloudRedDetector(Node):
         largest = max(contours, key=cv2.contourArea)
         area = cv2.contourArea(largest)
 
-        if area < 20:
+        if area < self.min_contour_area:
             return None
 
         M = cv2.moments(largest)

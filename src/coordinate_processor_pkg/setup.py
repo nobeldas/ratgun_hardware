@@ -29,8 +29,10 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'coordinate_publisher = coordinate_processor_pkg.coordinate_publisher:main' , 
-            'coordinate_publisher_ordered = coordinate_processor_pkg.coordinate_publisher_ordered:main' , 
+            'coordinate_publisher = '
+            'coordinate_processor_pkg.coordinate_publisher:main',
+            'coordinate_publisher_ordered = '
+            'coordinate_processor_pkg.coordinate_publisher_ordered:main',
         ],
     },
 )

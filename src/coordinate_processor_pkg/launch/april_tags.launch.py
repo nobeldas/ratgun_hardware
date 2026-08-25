@@ -4,6 +4,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+
 def generate_launch_description():
     config_file = LaunchConfiguration('config_file')
     image_topic = LaunchConfiguration('image_topic')
@@ -18,7 +19,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'config_file',
-            default_value=default_conf_file,  # actually the file is in coordinate_processor_pkg/config/ 
+            default_value=default_conf_file,
             description='give the config file path with the file name'
         ),
         DeclareLaunchArgument(
