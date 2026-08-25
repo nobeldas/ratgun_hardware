@@ -61,12 +61,11 @@ class PanTiltSubscriber(Node):
 #       gun_rotation = self.gun_transform[:3, :3]
         gun_position = self.gun_transform[:3, 3]
 
-        target_from_gun_base = self.target_xyz - gun_position
-        pan = np.arctan2(target_from_gun_base[1], target_from_gun_base[0])
+        x = self.target_xyz[0]
+        y = self.target_xyz[1]
+        z = self.target_xyz[2]
 
-        x = target_from_gun_base[0]
-        y = target_from_gun_base[1]
-        z = target_from_gun_base[2]
+        pan = np.arctan2(y, x)
 
         r = x * np.cos(pan) + y * np.sin(pan)
         h = z - self.a1 - self.a2

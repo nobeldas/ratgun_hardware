@@ -30,4 +30,10 @@ def generate_launch_description():
             parameters=[config_file],
             output='screen',
         ),
+        Node(
+            package='closed_loop_pkg',
+            executable='turrent_command',
+            parameters=[config_file],
+            output='screen',
+        ),
     ])
