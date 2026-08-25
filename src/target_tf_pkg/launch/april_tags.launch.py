@@ -11,7 +11,7 @@ def generate_launch_description():
     camera_info_topic = LaunchConfiguration('camera_info_topic')
 
     default_conf_file = PathJoinSubstitution([
-        FindPackageShare('coordinate_processor_pkg'),
+        FindPackageShare('target_tf_pkg'),
         'config',
         'april_tags.yaml'
     ])

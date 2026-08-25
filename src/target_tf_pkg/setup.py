@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import find_packages, setup
 
-package_name = 'coordinate_processor_pkg'
+package_name = 'target_tf_pkg'
 
 setup(
     name=package_name,
@@ -30,9 +30,9 @@ setup(
     entry_points={
         'console_scripts': [
             'coordinate_publisher = '
-            'coordinate_processor_pkg.coordinate_publisher:main',
+            'target_tf_pkg.coordinate_publisher:main',
             'coordinate_publisher_ordered = '
-            'coordinate_processor_pkg.coordinate_publisher_ordered:main',
+            'target_tf_pkg.coordinate_publisher_ordered:main',
         ],
     },
 )
