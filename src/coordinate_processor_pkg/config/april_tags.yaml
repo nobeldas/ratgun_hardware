@@ -7,6 +7,10 @@ apriltag:
 
     max_hamming: 1     # Increase: More tolerant, more false detections
                         # Decrease: Stricter, fewer false detections
+    tag:
+        ids: [0]
+        frames: [target_tf]
+
 
     detector:
 

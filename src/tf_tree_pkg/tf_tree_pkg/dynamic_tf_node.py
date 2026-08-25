@@ -22,20 +22,26 @@ class DynamicTFNode(Node):
             self.publish_tf
         )
         self.pan = 90  # Centered
-        self.tilt = 90 # Centered
-        self.a1 = 1
-        self.a2 = 1
+        self.tilt = 90  # Centered
+
+        self.declare_parameter('a1', 1.0)
+        self.declare_parameter('a2', 1.0)
+        self.declare_parameter('command_topic', 'pan_tilt_command')
+
+        self.a1 = self.get_parameter('a1').value
+        self.a2 = self.get_parameter('a2').value
+        command_topic = self.get_parameter('command_topic').value
 
         self.subscription = self.create_subscription(
                 Int32MultiArray,
-                'turret_commands',
+                command_topic,
                 self.command_callback,
                 10)
         self.subscription  # prevent unused variable warning
 
     def command_callback(self, msg):
-            self.pan, self.tilt, laser = msg.data
-            
+        self.pan, self.tilt = msg.data
+
     def publish_tf(self):
 
         stamp = self.get_clock().now().to_msg()
@@ -50,13 +56,13 @@ class DynamicTFNode(Node):
             [0.0, 0.0, 0.0, 1.0]
         ])
 
-        # servo1 --> servo2 
+        # servo1 --> servo2
         T_s1_s2 = np.array([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, self.a2],
             [0.0, 0.0, 0.0, 1.0]
-        ])  @np.array([
+        ]) @ np.array([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, -1.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
@@ -66,7 +72,7 @@ class DynamicTFNode(Node):
             [math.sin(tilt), math.cos(tilt), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]
-        ]) 
+        ])
 
         tf_base_servo1 = matrix_to_tf(
             T_b_s1,
@@ -81,8 +87,6 @@ class DynamicTFNode(Node):
             'servo2_link',
             stamp
         )
-
-
         self.tf_broadcaster.sendTransform([
             tf_base_servo1,
             tf_servo1_servo2,

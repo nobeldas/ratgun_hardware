@@ -26,7 +26,7 @@ class ImageCloudRedDetector(Node):
         self.cloud_topic = "/StereoNetNode/stereonet_pointcloud2"
 
         self.output_topic = "/red_object_center_image_cloud"
-        self.child_frame = "red_patch_image_cloud"
+        self.child_frame = "target_tf"
 
         self.image_width = 640
         self.image_height = 352

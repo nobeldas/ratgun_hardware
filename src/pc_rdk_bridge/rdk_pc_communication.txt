@@ -7,7 +7,7 @@ ssh sunrise@10.55.0.1
 pass: 330974
 
 Communication part is in ipad notes: "RDK S100 and PC Communication"
-
+9009
 RUN EVERYTHING IN ROOT :
 sudo -i
 

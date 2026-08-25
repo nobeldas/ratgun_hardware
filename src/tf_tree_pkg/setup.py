@@ -12,6 +12,10 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (
+          'share/' + package_name + '/config',
+          glob('config/*.yaml'),
+        ),
+        (
           'share/' + package_name + '/launch',
           glob('launch/*.launch.py'),
         ),

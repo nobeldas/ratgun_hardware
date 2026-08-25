@@ -20,7 +20,7 @@ class RedPointDetector(Node):
 
         self.cloud_topic = "/StereoNetNode/stereonet_pointcloud2"
         self.point_topic = "/red_object_center"
-        self.child_frame = "red_patch"
+        self.child_frame = "target_tf"
 
         self.sub = self.create_subscription(
             PointCloud2,
