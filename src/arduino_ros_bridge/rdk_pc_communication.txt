@@ -1,5 +1,5 @@
 same network ip
-ssh sunrise@192.168.0.107
+sshpass -p 330974 ssh sunrise@192.168.0.107
 
 wifi hotspot
 ssh sunrise@10.55.0.1
@@ -10,7 +10,9 @@ Communication part is in ipad notes: "RDK S100 and PC Communication"
 9009
 RUN EVERYTHING IN ROOT :
 sudo -i
-
+cd /home/sunrise/ratgun_hardware
+source /opt/ros/humble/setup.bash
+source install/setup.bash
 
 CHECK CAMERA CONNECTON
 i2cdetect -r -y 1
