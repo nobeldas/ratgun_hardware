@@ -10,313 +10,207 @@ import sys
 import time
 
 
-SESSION_NAME = 'ratgun'
-ARDUINO_PORT = '/dev/ttyACM0'
-SHUTDOWN_WAIT_SECONDS = 5
+SESSION = 'ratgun'
+WORKSPACE = Path(__file__).resolve().parent
+ROS_SETUP = Path('/opt/ros/humble/setup.bash')
+TROS_SETUP = Path('/opt/tros/humble/setup.bash')
+INSTALL_SETUP = WORKSPACE / 'install/setup.bash'
+LOCAL_SETUP = WORKSPACE / 'install/local_setup.bash'
+
+APRIL_CAMERA = (
+    'ros2 launch hobot_stereonet '
+    'stereonet_model_web_visual_v2.4.launch.py '
+    'stereonet_pub_web:=False '
+    'publish_pcd_enabled:=False '
+    'publish_visual_enabled:=False '
+    'publish_origin_enable:=False '
+    'publish_rectify_bgr:=True '
+    'mipi_image_width:=640 '
+    'mipi_image_height:=352 '
+    'mipi_sub_image_width:=640 '
+    'mipi_sub_image_height:=352 '
+    'mipi_image_framerate:=30.0 '
+    'mipi_gdc_enable:=True '
+    'log_level:=warn'
+)
+
+RED_POINT_CAMERA = (
+    'ros2 launch hobot_stereonet '
+    'stereonet_model_web_visual_v2.4.launch.py '
+    'stereonet_pub_web:=False '
+    'publish_pcd_enabled:=True '
+    'publish_visual_enabled:=False '
+    'publish_origin_enable:=False '
+    'publish_rectify_bgr:=True '
+    'mipi_image_width:=640 '
+    'mipi_image_height:=352 '
+    'mipi_sub_image_width:=640 '
+    'mipi_sub_image_height:=352 '
+    'mipi_image_framerate:=30.0 '
+    'mipi_gdc_enable:=True '
+    'pointcloud_downsample_step:=2 '
+    'pointcloud_depth_max:=4.0 '
+    'pcl_filter_enable:=False '
+    'speckle_filter_enable:=False '
+    'save_result_flag:=False '
+    'log_level:=warn'
+)
 
 
-def run_tmux(*args, check=True, capture_output=False):
+def tmux(*args, check=True, capture=False):
     return subprocess.run(
         ['tmux', *args],
         check=check,
-        capture_output=capture_output,
+        capture_output=capture,
         text=True,
     )
 
 
 def session_exists():
-    result = run_tmux(
-        'has-session',
-        '-t',
-        f'={SESSION_NAME}',
-        check=False,
-        capture_output=True,
-    )
-    return result.returncode == 0
+    return tmux(
+        'has-session', '-t', f'={SESSION}', check=False, capture=True
+    ).returncode == 0
+
+
+def ros_command(setup_files, command):
+    commands = [f'cd {shlex.quote(str(WORKSPACE))}']
+    commands += [f'source {shlex.quote(str(path))}' for path in setup_files]
+    commands.append(f'exec {command}')
+    return ' && '.join(commands)
+
+
+def create_window(name, command, first=False):
+    if first:
+        tmux(
+            'new-session', '-d', '-s', SESSION, '-n', name,
+            'bash', '-lc', command,
+        )
+    else:
+        tmux(
+            'new-window', '-t', f'={SESSION}', '-n', name,
+            'bash', '-lc', command,
+        )
 
 
 def stop_stack():
     if not session_exists():
-        print(f"No tmux session named '{SESSION_NAME}' is running.")
+        print(f"No tmux session named '{SESSION}' is running.")
         return
 
-    result = run_tmux(
-        'list-panes',
-        '-s',
-        '-t',
-        f'={SESSION_NAME}',
-        '-F',
-        '#{pane_id}',
-        capture_output=True,
-    )
+    panes = tmux(
+        'list-panes', '-s', '-t', f'={SESSION}',
+        '-F', '#{pane_id}', capture=True,
+    ).stdout.splitlines()
 
-    print(f"Stopping tmux session '{SESSION_NAME}'...")
-    for pane_id in result.stdout.splitlines():
-        pane_id = pane_id.strip()
-        if pane_id:
-            run_tmux('send-keys', '-t', pane_id, 'C-c', check=False)
+    print(f"Stopping tmux session '{SESSION}'...")
+    for pane in panes:
+        tmux('send-keys', '-t', pane, 'C-c', check=False)
 
-    time.sleep(SHUTDOWN_WAIT_SECONDS)
-
+    time.sleep(5)
     if session_exists():
-        run_tmux('kill-session', '-t', f'={SESSION_NAME}', check=False)
-
+        tmux('kill-session', '-t', f'={SESSION}', check=False)
     print('Ratgun stack stopped.')
 
 
-def shell_command(workspace, setup_files, command):
-    parts = [f'cd {shlex.quote(str(workspace))}']
-    parts.extend(
-        f'source {shlex.quote(str(setup_file))}'
-        for setup_file in setup_files
-    )
-    parts.append(f'exec {command}')
-    return ' && '.join(parts)
-
-
-def add_window(window_name, command, first=False):
-    tmux_command = [
-        'new-session' if first else 'new-window',
-        '-d' if first else '-t',
-    ]
-
-    if first:
-        tmux_command.extend([
-            '-s',
-            SESSION_NAME,
-            '-n',
-            window_name,
-            'bash',
-            '-lc',
-            command,
-        ])
-    else:
-        tmux_command.extend([
-            f'={SESSION_NAME}',
-            '-n',
-            window_name,
-            'bash',
-            '-lc',
-            command,
-        ])
-
-    run_tmux(*tmux_command)
-
-
-def validate_environment(workspace, camera_mode):
-    required_files = [
-        Path('/opt/ros/humble/setup.bash'),
-        workspace / 'install' / 'setup.bash',
-    ]
-
-    if camera_mode:
-        required_files.extend([
-            Path('/opt/tros/humble/setup.bash'),
-            workspace / 'install' / 'local_setup.bash',
-        ])
-
-    missing_files = [path for path in required_files if not path.is_file()]
-    if missing_files:
-        formatted = '\n'.join(f'  {path}' for path in missing_files)
-        raise RuntimeError(f'Required setup files are missing:\n{formatted}')
-
-    if shutil.which('tmux') is None:
-        raise RuntimeError('tmux is not installed on this RDK system')
-
+def validate(mode):
     if os.geteuid() != 0:
-        raise RuntimeError(
-            'Run this stack as root. Use "sudo -i" before starting it.'
-        )
+        raise RuntimeError('Run "sudo -i" before starting the stack.')
+    if shutil.which('tmux') is None:
+        raise RuntimeError('tmux is not installed on the RDK100.')
 
+    required = [ROS_SETUP, INSTALL_SETUP]
+    if mode:
+        required += [TROS_SETUP, LOCAL_SETUP]
 
-def camera_command(publish_pointcloud):
-    arguments = [
-        'ros2 launch hobot_stereonet',
-        'stereonet_model_web_visual_v2.4.launch.py',
-        'stereonet_pub_web:=False',
-        f'publish_pcd_enabled:={str(publish_pointcloud)}',
-        'publish_visual_enabled:=False',
-        'publish_origin_enable:=False',
-        'publish_rectify_bgr:=True',
-        'mipi_image_width:=640',
-        'mipi_image_height:=352',
-        'mipi_sub_image_width:=640',
-        'mipi_sub_image_height:=352',
-        'mipi_image_framerate:=30.0',
-        'mipi_gdc_enable:=True',
-    ]
-
-    if publish_pointcloud:
-        arguments.extend([
-            'pointcloud_downsample_step:=2',
-            'pointcloud_depth_max:=4.0',
-            'pcl_filter_enable:=False',
-            'speckle_filter_enable:=False',
-            'save_result_flag:=False',
-        ])
-
-    arguments.append('log_level:=warn')
-    return ' '.join(arguments)
+    missing = [path for path in required if not path.is_file()]
+    if missing:
+        paths = '\n'.join(f'  {path}' for path in missing)
+        raise RuntimeError(f'Required setup files are missing:\n{paths}')
 
 
 def start_stack(mode):
-    workspace = Path(__file__).resolve().parent
-    validate_environment(workspace, camera_mode=mode is not None)
-
+    validate(mode)
     if session_exists():
         raise RuntimeError(
-            f"The tmux session '{SESSION_NAME}' already exists. "
-            'Run this script with --stop first.'
+            f"Session '{SESSION}' already exists. Run ./run_stack.py --stop."
         )
 
-    ros_setup = Path('/opt/ros/humble/setup.bash')
-    tros_setup = Path('/opt/tros/humble/setup.bash')
-    workspace_setup = workspace / 'install' / 'setup.bash'
-    workspace_local_setup = workspace / 'install' / 'local_setup.bash'
-
-    core_setup_files = [ros_setup, workspace_setup]
-    target_setup_files = [tros_setup, workspace_local_setup]
+    core_setup = [ROS_SETUP, INSTALL_SETUP]
+    target_setup = [TROS_SETUP, LOCAL_SETUP]
 
     windows = [
-        (
-            'tf_tree',
-            shell_command(
-                workspace,
-                core_setup_files,
-                'ros2 launch tf_tree_pkg tf_tree.launch.py',
-            ),
-        ),
-        (
-            'closed_loop',
-            shell_command(
-                workspace,
-                core_setup_files,
-                'ros2 launch closed_loop_pkg closed_loop.launch.py',
-            ),
-        ),
-        (
-            'arduino',
-            shell_command(
-                workspace,
-                core_setup_files,
-                'ros2 run arduino_ros_bridge arduino_ros_bridge '
-                f'--ros-args -p port_name:={ARDUINO_PORT}',
-            ),
-        ),
+        ('tf_tree', ros_command(
+            core_setup,
+            'ros2 launch tf_tree_pkg tf_tree.launch.py',
+        )),
+        ('closed_loop', ros_command(
+            core_setup,
+            'ros2 launch closed_loop_pkg closed_loop.launch.py',
+        )),
+        ('arduino', ros_command(
+            core_setup,
+            'ros2 run arduino_ros_bridge arduino_ros_bridge '
+            '--ros-args -p port_name:=/dev/ttyACM0',
+        )),
     ]
 
     if mode == 'april_tags':
-        windows.extend([
-            (
-                'camera',
-                shell_command(
-                    workspace,
-                    [tros_setup],
-                    camera_command(publish_pointcloud=False),
-                ),
-            ),
-            (
-                'target',
-                shell_command(
-                    workspace,
-                    target_setup_files,
-                    'ros2 launch target_tf_pkg april_tags.launch.py',
-                ),
-            ),
-        ])
+        windows += [
+            ('camera', ros_command([TROS_SETUP], APRIL_CAMERA)),
+            ('target', ros_command(
+                target_setup,
+                'ros2 launch target_tf_pkg april_tags.launch.py',
+            )),
+        ]
     elif mode == 'red_point':
-        windows.extend([
-            (
-                'camera',
-                shell_command(
-                    workspace,
-                    [tros_setup],
-                    camera_command(publish_pointcloud=True),
-                ),
-            ),
-            (
-                'target',
-                shell_command(
-                    workspace,
-                    target_setup_files,
-                    'ros2 launch target_tf_pkg '
-                    'coordinate_publisher_ordered.launch.py',
-                ),
-            ),
-        ])
+        windows += [
+            ('camera', ros_command([TROS_SETUP], RED_POINT_CAMERA)),
+            ('target', ros_command(
+                target_setup,
+                'ros2 launch target_tf_pkg '
+                'coordinate_publisher_ordered.launch.py',
+            )),
+        ]
 
     try:
-        for index, (window_name, command) in enumerate(windows):
-            add_window(window_name, command, first=index == 0)
-
-        run_tmux(
-            'set-option',
-            '-t',
-            f'={SESSION_NAME}',
-            'remain-on-exit',
-            'on',
-        )
-        run_tmux(
-            'select-window',
-            '-t',
-            f'={SESSION_NAME}:tf_tree',
-        )
-    except Exception:
+        for index, (name, command) in enumerate(windows):
+            create_window(name, command, first=index == 0)
+            if index == 0:
+                tmux(
+                    'set-option', '-t', f'={SESSION}',
+                    'remain-on-exit', 'on',
+                )
+        tmux('select-window', '-t', f'={SESSION}:tf_tree')
+    except subprocess.CalledProcessError:
         if session_exists():
-            run_tmux('kill-session', '-t', f'={SESSION_NAME}', check=False)
+            tmux('kill-session', '-t', f'={SESSION}', check=False)
         raise
 
-    print(f"Started tmux session '{SESSION_NAME}'.")
-
-    if not sys.stdin.isatty() or not sys.stdout.isatty():
-        print(f'Attach with: tmux attach-session -t {SESSION_NAME}')
-        return
-
-    os.execvp(
-        'tmux',
-        ['tmux', 'attach-session', '-t', f'={SESSION_NAME}'],
-    )
+    print(f"Started tmux session '{SESSION}'.")
+    os.execvp('tmux', ['tmux', 'attach-session', '-t', f'={SESSION}'])
 
 
-def parse_arguments():
+def parse_args():
     parser = argparse.ArgumentParser(
-        description='Launch the Ratgun ROS 2 stack in tmux windows.'
+        description='Launch the Ratgun ROS 2 stack on the RDK100.'
     )
     modes = parser.add_mutually_exclusive_group()
-    modes.add_argument(
-        '--april_tags',
-        action='store_true',
-        help='Use AprilTag target detection and the image-only camera mode.',
-    )
-    modes.add_argument(
-        '--red_point',
-        action='store_true',
-        help='Use red-point detection and enable the point cloud.',
-    )
-    parser.add_argument(
-        '--stop',
-        action='store_true',
-        help='Stop the running Ratgun tmux session cleanly.',
-    )
+    modes.add_argument('--april_tags', action='store_true')
+    modes.add_argument('--red_point', action='store_true')
+    modes.add_argument('--stop', action='store_true')
     return parser.parse_args()
 
 
 def main():
-    args = parse_arguments()
-
+    args = parse_args()
     if args.stop:
-        if args.april_tags or args.red_point:
-            raise RuntimeError('--stop cannot be combined with a target mode')
         stop_stack()
-        return
-
-    mode = None
-    if args.april_tags:
-        mode = 'april_tags'
+    elif args.april_tags:
+        start_stack('april_tags')
     elif args.red_point:
-        mode = 'red_point'
-
-    start_stack(mode)
+        start_stack('red_point')
+    else:
+        start_stack(None)
 
 
 if __name__ == '__main__':
