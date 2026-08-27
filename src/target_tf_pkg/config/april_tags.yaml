@@ -3,7 +3,7 @@ apriltag:
 
     family: 36h11      # Printed tag family (must match your tags)
 
-    size: 0.52        # Tag size in meters (correct value gives correct pose)
+    size: 0.055        # Tag size in meters (correct value gives correct pose)
 
     max_hamming: 1     # Increase: More tolerant, more false detections
                         # Decrease: Stricter, fewer false detections
