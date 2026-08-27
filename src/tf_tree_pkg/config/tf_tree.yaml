@@ -1,0 +1,15 @@
+dynamic_tf_node:
+  ros__parameters:
+    a1: 0.115
+    a2: 0.035
+    command_topic: pan_tilt_command
+
+static_tf_node:
+  ros__parameters:
+    a3: 0.09
+    tbc: [
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, -0.3,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    ]

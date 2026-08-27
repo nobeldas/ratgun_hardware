@@ -1,0 +1,33 @@
+apriltag:
+  ros__parameters:
+
+    family: 36h11      # Printed tag family (must match your tags)
+
+    size: 0.055        # Tag size in meters (correct value gives correct pose)
+
+    max_hamming: 1     # Increase: More tolerant, more false detections
+                        # Decrease: Stricter, fewer false detections
+    tag:
+        ids: [0]
+        frames: [target_tf]
+
+
+    detector:
+
+      threads: 4       # Increase: Faster detection, more CPU usage
+                        # Decrease: Slower detection, less CPU usage
+
+      decimate: 1.0    # Increase: Faster detection, lower accuracy
+                        # Decrease: Slower detection, higher accuracy
+
+      blur: 0.0        # Increase: More noise removal, less image detail
+                        # Decrease: Sharper image, more sensitive to noise
+
+      refine: true     # true: Better pose accuracy
+                        # false: Faster detection
+
+      sharpening: 0.5 # Increase: Better for blurry images, may amplify noise
+                        # Decrease: Less sharpening, smoother image
+
+      debug: false     # true: Saves debug images and prints extra logs
+                        # false: Normal operation

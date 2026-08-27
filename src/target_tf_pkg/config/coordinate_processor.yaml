@@ -1,0 +1,24 @@
+red_point_detector:
+  ros__parameters:
+    cloud_topic: /StereoNetNode/stereonet_pointcloud2
+    point_topic: /red_object_center
+    child_frame: target_tf
+    red_min: 120
+    green_max: 80
+    blue_max: 80
+
+ordered_red_point_detector:
+  ros__parameters:
+    image_topic: /StereoNetNode/rectify_left_image
+    cloud_topic: /StereoNetNode/stereonet_pointcloud2
+    output_topic: /red_object_center_image_cloud
+    child_frame: target_tf
+    image_width: 640
+    image_height: 352
+    downsample_step: 2
+    window_size: 5
+    min_contour_area: 20.0
+    lower_red_hsv_1: [0, 100, 80]
+    upper_red_hsv_1: [10, 255, 255]
+    lower_red_hsv_2: [170, 100, 80]
+    upper_red_hsv_2: [179, 255, 255]
