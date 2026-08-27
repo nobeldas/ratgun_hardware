@@ -177,7 +177,7 @@ def start_stack(mode):
             create_window(name, command, first=index == 0)
             if index == 0:
                 tmux(
-                    'set-option', '-t', f'={SESSION}',
+                    'set-option', '-w', '-t', f'={SESSION}:tf_tree',
                     'remain-on-exit', 'on',
                 )
         tmux('select-window', '-t', f'={SESSION}:tf_tree')
