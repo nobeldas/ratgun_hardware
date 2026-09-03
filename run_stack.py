@@ -162,6 +162,14 @@ def start_stack(mode):
                 'ros2 launch target_tf_pkg april_tags.launch.py',
             )),
         ]
+    elif mode == 'cctag':
+        windows += [
+            ('camera', ros_command([TROS_SETUP], APRIL_CAMERA)),
+            ('target', ros_command(
+                target_setup,
+                'ros2 launch cctag_tf_pkg cctag_3rings.launch.py',
+            )),
+        ]
     elif mode == 'red_point':
         windows += [
             ('camera', ros_command([TROS_SETUP], RED_POINT_CAMERA)),
@@ -196,6 +204,7 @@ def parse_args():
     )
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--april_tags', action='store_true')
+    modes.add_argument('--cctag', action='store_true')
     modes.add_argument('--red_point', action='store_true')
     modes.add_argument('--stop', action='store_true')
     return parser.parse_args()
@@ -207,6 +216,8 @@ def main():
         stop_stack()
     elif args.april_tags:
         start_stack('april_tags')
+    elif args.cctag:
+        start_stack('cctag')
     elif args.red_point:
         start_stack('red_point')
     else:

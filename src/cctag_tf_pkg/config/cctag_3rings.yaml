@@ -1,0 +1,17 @@
+cctag_tf_node:
+  ros__parameters:
+    image_topic: /StereoNetNode/rectify_left_image
+    camera_info_topic: /StereoNetNode/rectify_left_image/camera_info
+    output_pose_topic: /target_cc_position
+    output_point_topic: /target_cc_point
+    output_id_topic: /target_cc_id
+    parent_frame: camera_optical_frame
+    target_frame: target_tf
+    n_rings: 3
+    target_id: -1
+    marker_outer_diameter: 0.06
+    use_cuda: false
+    cctag_bank_file: ""
+    publish_tf: true
+    min_axis_pixels: 4.0
+    max_axis_ratio: 8.0
