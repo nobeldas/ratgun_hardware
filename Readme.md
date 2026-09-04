@@ -15,9 +15,6 @@ sudo -i
 
 ./run_stack.py --red_point
 
-# Cctags
-
-./run_stack.py --cctag
 
 # Core stack only:
 
