@@ -5,20 +5,21 @@ sshpass -p adminisadmin ssh sunrise@192.168.0.107
 # Usage on the RDK100:
 
 cd /home/sunrise/ratgun_hardware
-sudo -i
+
+## always start in root ##
 
 # AprilTag mode:
 
-./run_stack.py --april_tags
+sudo ./run_stack.py --april_tags
 
 # Red-point mode:
 
-./run_stack.py --red_point
+sudo ./run_stack.py --red_point
 
 
 # Core stack only:
 
-./run_stack.py
+sudo ./run_stack.py
 
 
 # From the workspace directory, run:

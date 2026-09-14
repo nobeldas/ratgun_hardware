@@ -3,3 +3,4 @@ install/
 log/
 .gitignore
 tockens.txt
+.vscode

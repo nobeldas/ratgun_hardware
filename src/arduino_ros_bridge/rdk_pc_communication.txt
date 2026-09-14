@@ -1,8 +1,9 @@
 same network ip
-sshpass -p adminisadmin ssh sunrise@192.168.0.107
+sshpass -p adminisadmin ssh sunrise@192.168.127.10
 
 wifi hotspot
 ssh sunrise@10.55.0.1
+sshpass -p adminisadmin ssh sunrise@192.168.0.107
 
 pass: adminisadmin
 
@@ -131,3 +132,20 @@ FOR APRIL TAGS:
 
 
 
+sunrise@ubuntu:~$ nmcli connection show --active
+  hostname -I
+  ip route
+
+NAME              UUID                                  TYPE      DEVICE 
+scorpion_100      a05f7e33-b83b-49e0-833c-0be1e9cb9aed  wifi      wlan1  
+TP-Link_D958      7f8463ff-7995-4571-875e-b29c0f0e8c94  wifi      wlan0  
+direct-192-168-2  0128dded-b0e5-41be-bbf8-7390e2bae1f0  ethernet  eth0   
+netplan-eth1      8bf25856-ca0b-388e-823c-b898666ab9d2  ethernet  eth1   
+192.168.2.10 192.168.127.10 192.168.0.107 10.55.0.1 
+default via 192.168.0.1 dev wlan0 proto dhcp metric 601 
+10.55.0.0/24 dev wlan1 proto kernel scope link src 10.55.0.1 metric 600 
+169.254.0.0/16 dev wlan1 scope link metric 1000 
+192.168.0.0/24 dev wlan0 proto kernel scope link src 192.168.0.107 metric 601 
+192.168.2.0/24 dev eth0 proto kernel scope link src 192.168.2.10 metric 100 linkdown 
+192.168.127.0/24 dev eth1 proto kernel scope link src 192.168.127.10 metric 101 linkdown 
+192.168.127.0/24 dev eth0 metric 700 linkdown 
