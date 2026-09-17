@@ -35,7 +35,7 @@ public:
   {
     // Declare node parameters with default values
     this->declare_parameter<std::string>("target_topic", "/target_tf_position");
-    this->declare_parameter<std::string>("output_topic", "/gun_transform_matrix");
+    this->declare_parameter<std::string>("output_topic", "/servo2_transform_matrix");
     this->declare_parameter<std::string>("loop_topic", "pan_tilt_command");
     this->declare_parameter<double>("a1", 1.0);
     this->declare_parameter<double>("a2", 1.0);

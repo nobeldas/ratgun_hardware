@@ -29,7 +29,8 @@ setup(
     entry_points={
         'console_scripts': [
             'base_obj_coordinate = closed_loop_pkg.base_obj_coordinate:main',
-            'base_gun_transformation = closed_loop_pkg.base_gun_transformaton:main',
+            'base_gun_transformation = closed_loop_pkg.base_gun_transform:main',
+            'base_servo2_transformation = closed_loop_pkg.base_servo2_transform:main',
             'pan_tilt_pub = closed_loop_pkg.pan_tilt_pub:main',
             'turrent_command = closed_loop_pkg.turrent_command:main',
         ],

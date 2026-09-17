@@ -10,6 +10,12 @@ gun_tf_matrix_publisher:
     source_frame: gun_end_link
     output_topic: /gun_transform_matrix
 
+servo2_tf_matrix_publisher:
+  ros__parameters:
+    target_frame: base_link
+    source_frame: servo2_link
+    output_topic: /servo2_transform_matrix
+
 pan_tilt_node:
   ros__parameters:
     target_topic: /target_tf_position
