@@ -1,11 +1,13 @@
 same network ip
-sshpass -p adminisadmin ssh sunrise@192.168.127.10
+sshpass -p adminisadmin ssh sunrise@192.168.0.107
 
 wifi hotspot
 ssh sunrise@10.55.0.1
-sshpass -p adminisadmin ssh sunrise@192.168.0.107
 
 pass: adminisadmin
+
+ethernet, and connect ethernet close to the wifi card
+sshpass -p adminisadmin ssh sunrise@192.168.2.10
 
 Communication part is in ipad notes: "RDK S100 and PC Communication"
 9009
@@ -18,7 +20,6 @@ source install/setup.bash
 CHECK CAMERA CONNECTON
 i2cdetect -r -y 1
 i2cdetect -r -y 2
-
 
 
 DEPTH CAMERA LAUNCH COMMAND

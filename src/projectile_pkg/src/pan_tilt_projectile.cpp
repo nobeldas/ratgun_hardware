@@ -112,7 +112,7 @@ private:
     // ROS MultiArray is row-major. Fill the Eigen 4x4 matrix:
     for (int row = 0; row < 4; ++row) {
       for (int col = 0; col < 4; ++col) {
-        gun_transform_(row, col) = msg->data[row * 4 + col];
+        gun_transform_(row, col) = msg->data[row * 4 + col];   // can get x y and z from (0,3) (1,3) and (2,3)
       }
     }
 
@@ -135,39 +135,24 @@ private:
     const double z = target_xyz_(2);
 
     // 1. Compute pan angle (yaw around Z axis)
-    const double pan = std::atan2(y, x);
+    const double pan = std::atan2(y, x);    // this stays same as it is, no change
 
-    // 2. Compute horizontal distance projected onto the pan plane
-    const double r = x * std::cos(pan) + y * std::sin(pan);
+    const double R = std::sqrt((pow(x, 2)+ pow(y, 2)))
+    // this is where everything else is written.
 
-    // 3. Compute vertical displacement adjusted for arm offsets
-    const double h = z - a1_ - a2_;
 
-    // 4. Total Euclidean distance in the pan plane
-    const double R = std::hypot(r, h); // Cleaner and numerically safer than std::sqrt(r*r + h*h)
 
-    // Safety check: Avoid division by zero
-    if (R == 0.0) {
-      RCLCPP_WARN(this->get_logger(), "Target distance R is zero.");
-      return;
-    }
 
-    // Safety check: acos domain [-1.0, 1.0]
-    const double acos_argument = a3_ / R;
-    if (acos_argument < -1.0 || acos_argument > 1.0) {
-      RCLCPP_WARN(
-        this->get_logger(),
-        "Target outside valid tilt geometry. a3/R = %.4f", acos_argument);
-      return;
-    }
 
-    // 5. Tilt calculation
-    const double alpha = std::atan2(r, h);
-    const double tilt1 = std::acos(acos_argument) - alpha;
 
-    // Convert radians to degrees (M_PI comes from <cmath>)
-    const double pan_deg = pan * (180.0 / M_PI);
-    const double tilt1_deg = tilt1 * (180.0 / M_PI);
+
+
+
+
+
+
+
+    //       ///////////////////////////////////////////////////////////////////////
 
     // 6. Build and publish message
     auto msg = std_msgs::msg::Int32MultiArray();
