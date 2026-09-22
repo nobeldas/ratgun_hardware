@@ -1,0 +1,8 @@
+pan_tilt_node:
+  ros__parameters:
+    a3: 0.09
+    p_vel: 10.0
+    g: 9.81
+    target_topic: /target_tf_position
+    output_topic: /servo2_transform_matrix
+    loop_topic: /pan_tilt_command

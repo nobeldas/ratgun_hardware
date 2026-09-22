@@ -1,9 +1,9 @@
+#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <numbers>
 #include <memory>
+#include <stdexcept>
 #include <string>
-#include <vector>
 
 // ROS 2 C++ client library
 #include <rclcpp/rclcpp.hpp>
@@ -19,6 +19,12 @@
 // Using namespace inside an implementation file is fine and lets us write 20ms instead of std::chrono::milliseconds(20)
 using namespace std::chrono_literals;
 
+namespace
+{
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kNumericalTolerance = 1.0e-9;
+}  // namespace
+
 class PanTiltSubscriber : public rclcpp::Node
 {
 public:
@@ -30,17 +36,14 @@ public:
   : Node("pan_tilt_node"),
     target_received_(false),
     transform_received_(false),
-    a1_(1.0),
-    a2_(1.0),
-    a3_(1.0), 
-    p_vel(10.0)
+    a3_(1.0),
+    projectile_velocity_(10.0),
+    gravity_(9.81)
   {
     // Declare node parameters with default values
     this->declare_parameter<std::string>("target_topic", "/target_tf_position");
     this->declare_parameter<std::string>("output_topic", "/servo2_transform_matrix");
     this->declare_parameter<std::string>("loop_topic", "pan_tilt_command");
-    this->declare_parameter<double>("a1", 1.0);
-    this->declare_parameter<double>("a2", 1.0);
     this->declare_parameter<double>("a3", 1.0);
     this->declare_parameter<double>("p_vel", 10.0);
     this->declare_parameter<double>("g", 9.81);
@@ -50,11 +53,14 @@ public:
     output_topic_ = this->get_parameter("output_topic").as_string();
     loop_topic_ = this->get_parameter("loop_topic").as_string();
 
-    a1_ = this->get_parameter("a1").as_double();
-    a2_ = this->get_parameter("a2").as_double();
     a3_ = this->get_parameter("a3").as_double();
-    p_vel = this->get_parameter("p_vel").as_double();
-    g = this->get_parameter("g").as_double();
+    projectile_velocity_ = this->get_parameter("p_vel").as_double();
+    gravity_ = this->get_parameter("g").as_double();
+
+    if (a3_ < 0.0 || projectile_velocity_ <= 0.0 || gravity_ <= 0.0) {
+      throw std::invalid_argument(
+              "Parameters must satisfy a3 >= 0, p_vel > 0, and g > 0");
+    }
 
     // -------------------------------------------------------------------------
     // SUBSCRIBERS:
@@ -87,7 +93,7 @@ public:
     // -------------------------------------------------------------------------
     timer_ = this->create_wall_timer(
       20ms,
-      [this]() { this->publish_commands(); });
+      [this]() {this->publish_commands();});
   }
 
 private:
@@ -115,6 +121,15 @@ private:
       return;
     }
 
+    if (!std::all_of(
+        msg->data.begin(), msg->data.end(), [](double value) {
+          return std::isfinite(value);
+        }))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Transform matrix contains a non-finite value");
+      return;
+    }
+
     // ROS MultiArray is row-major. Fill the Eigen 4x4 matrix:
     for (int row = 0; row < 4; ++row) {
       for (int col = 0; col < 4; ++col) {
@@ -135,26 +150,63 @@ private:
       return;
     }
 
-    // Target coordinates extracted from our Eigen 3D vector
-    const double x = target_xyz_(0);
-    const double y = target_xyz_(1);
-    const double z = target_xyz_(2);    // Zg, 
+    // Work from the servo2/projectile origin rather than the base origin.
+    const double x = target_xyz_(0) - gun_transform_(0, 3);
+    const double y = target_xyz_(1) - gun_transform_(1, 3);
+    const double z = target_xyz_(2) - gun_transform_(2, 3);
 
-    // 1. Compute pan angle (yaw around Z axis)
-    const double pan = std::atan2(y, x);    // this stays same as it is, no change
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 2000,
+        "Target position contains a non-finite value");
+      return;
+    }
 
-    const double R = std::sqrt((pow(x, 2)+ pow(y, 2)))
-    // this is where everything else is written.
-    // Zg = z, R = R, V = p_vel, g = 9.81, a = a3
-    const double alp = std::sqrt(pow((pow(p_vel, 2) - z*g), 2) - pow(g, 2)*(pow(R,2) + pow(z, 2) - pow(a3, 2)));
-    const double beta = 2*(pow(p_vel, 2) -z*g);
-    const double g2 = pow(g,2);
-    const double t = std::sqrt((beta - alp)/g2);
-    const double den = a3*R - (1/2*p_vel*g*pow(t,3));
-    const double num = p_vel*t*R + (1/2*a3*g*t);
-    const double tilt = atan2(num, den);
-    const double tilt1_deg = tilt * 180.0 / std::numbers::pi;  ///// change it to actual py or find an equation or library for it. 
-    const double pan_deg = pan * 180.0 / std::numbers::pi ;
+    const double pan = std::atan2(y, x);
+    const double horizontal_range = std::hypot(x, y);
+    const double velocity_squared = projectile_velocity_ * projectile_velocity_;
+    const double gravity_squared = gravity_ * gravity_;
+    const double velocity_height_term = velocity_squared - z * gravity_;
+    const double discriminant =
+      velocity_height_term * velocity_height_term -
+      gravity_squared *
+      (horizontal_range * horizontal_range + z * z - a3_ * a3_);
+
+    if (discriminant < -kNumericalTolerance) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 2000,
+        "Target is unreachable for the configured projectile velocity");
+      return;
+    }
+
+    const double alpha = std::sqrt(std::max(0.0, discriminant));
+    const double beta = 2.0 * velocity_height_term;
+    const double time_squared = (beta - alpha) / gravity_squared;
+
+    if (time_squared < -kNumericalTolerance) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 2000,
+        "Projectile equation has no real flight-time solution");
+      return;
+    }
+
+    const double flight_time = std::sqrt(std::max(0.0, time_squared));
+    const double denominator =
+      a3_ * horizontal_range -
+      0.5 * projectile_velocity_ * gravity_ * std::pow(flight_time, 3);
+    const double numerator =
+      projectile_velocity_ * flight_time * horizontal_range +
+      0.5 * a3_ * gravity_ * flight_time;
+    const double tilt = std::atan2(numerator, denominator);
+    const double tilt_deg = tilt * 180.0 / kPi;
+    const double pan_deg = pan * 180.0 / kPi;
+
+    if (!std::isfinite(pan_deg) || !std::isfinite(tilt_deg)) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 2000,
+        "Projectile calculation produced a non-finite command");
+      return;
+    }
 
     // 6. Build and publish message
     auto msg = std_msgs::msg::Int32MultiArray();
@@ -162,7 +214,7 @@ private:
     // static_cast<int32_t> explicitly converts double to 32-bit signed integer
     msg.data = {
       static_cast<int32_t>(std::round(pan_deg)),
-      static_cast<int32_t>(std::round(tilt1_deg))
+      static_cast<int32_t>(std::round(tilt_deg))
     };
 
     command_pub_->publish(msg);
@@ -178,11 +230,9 @@ private:
   bool target_received_;
   bool transform_received_;
 
-  double a1_;
-  double a2_;
   double a3_;
-  double p_vel;
-  double g;
+  double projectile_velocity_;
+  double gravity_;
 
   std::string target_topic_;
   std::string output_topic_;

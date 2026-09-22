@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 project(projectile_pkg)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -11,28 +11,28 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(example_interfaces REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
-add_executable(my_node src/my_node.cpp)
-add_executable(my_node_class src/my_node_class.cpp)
 add_executable(pan_tilt_projectile src/pan_tilt_projectile.cpp)
-ament_target_dependencies(my_node rclcpp example_interfaces)
-ament_target_dependencies(my_node_class rclcpp example_interfaces)
 ament_target_dependencies(
-    pan_tilt_projectile
-    rclcpp geometry_msgs std_msgs
-  )
+  pan_tilt_projectile
+  rclcpp geometry_msgs std_msgs
+)
 
 target_link_libraries(pan_tilt_projectile Eigen3::Eigen)
 
 install(TARGETS
-	my_node
-  my_node_class
-	pan_tilt_projectile
-	DESTINATION lib/${PROJECT_NAME}
+  pan_tilt_projectile
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
+  PATTERN "__pycache__" EXCLUDE
+  PATTERN "*.pyc" EXCLUDE
 )
 
 if(BUILD_TESTING)
