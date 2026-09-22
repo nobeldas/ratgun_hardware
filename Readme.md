@@ -16,11 +16,13 @@ sudo ./run_stack.py --april_tags
 
 sudo ./run_stack.py --red_point
 
-
 # Core stack only:
 
 sudo ./run_stack.py
 
+# With Projectile:
+
+sudo ./run_stack.py --red_point --proj
 
 # From the workspace directory, run:
 

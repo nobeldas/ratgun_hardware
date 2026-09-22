@@ -128,7 +128,7 @@ def validate(mode):
         raise RuntimeError(f'Required setup files are missing:\n{paths}')
 
 
-def start_stack(mode):
+def start_stack(mode, use_projectile=False):
     validate(mode)
     if session_exists():
         raise RuntimeError(
@@ -137,6 +137,9 @@ def start_stack(mode):
 
     core_setup = [ROS_SETUP, INSTALL_SETUP]
     target_setup = [TROS_SETUP, LOCAL_SETUP]
+    closed_loop_command = 'ros2 launch closed_loop_pkg closed_loop.launch.py'
+    if use_projectile:
+        closed_loop_command += ' use_projectile:=true'
 
     windows = [
         ('tf_tree', ros_command(
@@ -145,7 +148,7 @@ def start_stack(mode):
         )),
         ('closed_loop', ros_command(
             core_setup,
-            'ros2 launch closed_loop_pkg closed_loop.launch.py',
+            closed_loop_command,
         )),
         ('arduino', ros_command(
             core_setup,
@@ -198,6 +201,11 @@ def parse_args():
     modes.add_argument('--april_tags', action='store_true')
     modes.add_argument('--red_point', action='store_true')
     modes.add_argument('--stop', action='store_true')
+    parser.add_argument(
+        '--proj',
+        action='store_true',
+        help='Use projectile compensation instead of the normal pan/tilt node.',
+    )
     return parser.parse_args()
 
 
@@ -206,11 +214,11 @@ def main():
     if args.stop:
         stop_stack()
     elif args.april_tags:
-        start_stack('april_tags')
+        start_stack('april_tags', args.proj)
     elif args.red_point:
-        start_stack('red_point')
+        start_stack('red_point', args.proj)
     else:
-        start_stack(None)
+        start_stack(None, args.proj)
 
 
 if __name__ == '__main__':
