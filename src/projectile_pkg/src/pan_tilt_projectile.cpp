@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cmath>
+#include <numbers>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,7 +32,8 @@ public:
     transform_received_(false),
     a1_(1.0),
     a2_(1.0),
-    a3_(1.0)
+    a3_(1.0), 
+    p_vel(10.0)
   {
     // Declare node parameters with default values
     this->declare_parameter<std::string>("target_topic", "/target_tf_position");
@@ -40,6 +42,8 @@ public:
     this->declare_parameter<double>("a1", 1.0);
     this->declare_parameter<double>("a2", 1.0);
     this->declare_parameter<double>("a3", 1.0);
+    this->declare_parameter<double>("p_vel", 10.0);
+    this->declare_parameter<double>("g", 9.81);
 
     // Retrieve parameter values into member variables
     target_topic_ = this->get_parameter("target_topic").as_string();
@@ -49,6 +53,8 @@ public:
     a1_ = this->get_parameter("a1").as_double();
     a2_ = this->get_parameter("a2").as_double();
     a3_ = this->get_parameter("a3").as_double();
+    p_vel = this->get_parameter("p_vel").as_double();
+    g = this->get_parameter("g").as_double();
 
     // -------------------------------------------------------------------------
     // SUBSCRIBERS:
@@ -132,27 +138,23 @@ private:
     // Target coordinates extracted from our Eigen 3D vector
     const double x = target_xyz_(0);
     const double y = target_xyz_(1);
-    const double z = target_xyz_(2);
+    const double z = target_xyz_(2);    // Zg, 
 
     // 1. Compute pan angle (yaw around Z axis)
     const double pan = std::atan2(y, x);    // this stays same as it is, no change
 
     const double R = std::sqrt((pow(x, 2)+ pow(y, 2)))
     // this is where everything else is written.
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //       ///////////////////////////////////////////////////////////////////////
+    // Zg = z, R = R, V = p_vel, g = 9.81, a = a3
+    const double alp = std::sqrt(pow((pow(p_vel, 2) - z*g), 2) - pow(g, 2)*(pow(R,2) + pow(z, 2) - pow(a3, 2)));
+    const double beta = 2*(pow(p_vel, 2) -z*g);
+    const double g2 = pow(g,2);
+    const double t = std::sqrt((beta - alp)/g2);
+    const double den = a3*R - (1/2*p_vel*g*pow(t,3));
+    const double num = p_vel*t*R + (1/2*a3*g*t);
+    const double tilt = atan2(num, den);
+    const double tilt1_deg = tilt * 180.0 / std::numbers::pi;  ///// change it to actual py or find an equation or library for it. 
+    const double pan_deg = pan * 180.0 / std::numbers::pi ;
 
     // 6. Build and publish message
     auto msg = std_msgs::msg::Int32MultiArray();
@@ -179,6 +181,8 @@ private:
   double a1_;
   double a2_;
   double a3_;
+  double p_vel;
+  double g;
 
   std::string target_topic_;
   std::string output_topic_;
