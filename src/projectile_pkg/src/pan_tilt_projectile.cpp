@@ -202,7 +202,7 @@ private:
 
 
     const double tilt_deg = tilt * 180.0 / kPi;
-    // const double hardare_tilt_deg = std::clamp(tilt_deg + 90.0, 0.0, 111.0);
+    const double hardare_tilt_deg = tilt_deg - 90;
     const double pan_deg = pan * 180.0 / kPi;
 
     if (!std::isfinite(pan_deg) || !std::isfinite(tilt_deg)) {
@@ -218,7 +218,7 @@ private:
     // static_cast<int32_t> explicitly converts double to 32-bit signed integer
     msg.data = {
       static_cast<int32_t>(std::round(pan_deg)),
-      static_cast<int32_t>(std::round(tilt_deg))
+      static_cast<int32_t>(std::round(hardare_tilt_deg))
     };
 
     command_pub_->publish(msg);
