@@ -214,7 +214,7 @@ private:
     // static_cast<int32_t> explicitly converts double to 32-bit signed integer
     msg.data = {
       static_cast<int32_t>(std::round(pan_deg)),
-      static_cast<int32_t>(std::round(hardare_tilt_deg))
+      static_cast<int32_t>(std::round(tilt_deg))
     };
 
     command_pub_->publish(msg);
