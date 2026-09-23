@@ -190,15 +190,19 @@ private:
     }
 
     const double flight_time = std::sqrt(std::max(0.0, time_squared));
+
+    const double q = z + 0.5  * gravity_ * flight_time *flight_time;
+
+
     const double denominator =
-      a3_ * horizontal_range -
-      0.5 * projectile_velocity_ * gravity_ * std::pow(flight_time, 3);
+      a3_ * horizontal_range -  projectile_velocity_ *flight_time * q;
     const double numerator =
-      projectile_velocity_ * flight_time * horizontal_range +
-      0.5 * a3_ * gravity_ * flight_time *flight_time;
+      projectile_velocity_ * flight_time * horizontal_range + a3_ * q;
     const double tilt = std::atan2(numerator, denominator);
+
+
     const double tilt_deg = tilt * 180.0 / kPi;
-    const double hardare_tilt_deg = std::clamp(tilt_deg + 90.0, 0.0, 111.0);
+    // const double hardare_tilt_deg = std::clamp(tilt_deg + 90.0, 0.0, 111.0);
     const double pan_deg = pan * 180.0 / kPi;
 
     if (!std::isfinite(pan_deg) || !std::isfinite(tilt_deg)) {
