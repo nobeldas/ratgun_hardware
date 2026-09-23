@@ -180,8 +180,7 @@ private:
     }
 
     const double alpha = std::sqrt(std::max(0.0, discriminant));
-    const double beta = 2.0 * velocity_height_term;
-    const double time_squared = (beta - alpha) / gravity_squared;
+    const double time_squared = 2*(velocity_height_term - alpha) / gravity_squared;
 
     if (time_squared < -kNumericalTolerance) {
       RCLCPP_WARN_THROTTLE(
@@ -196,9 +195,10 @@ private:
       0.5 * projectile_velocity_ * gravity_ * std::pow(flight_time, 3);
     const double numerator =
       projectile_velocity_ * flight_time * horizontal_range +
-      0.5 * a3_ * gravity_ * flight_time;
+      0.5 * a3_ * gravity_ * flight_time *flight_time;
     const double tilt = std::atan2(numerator, denominator);
     const double tilt_deg = tilt * 180.0 / kPi;
+    const double hardare_tilt_deg = std::clamp(tilt_deg + 90.0, 0.0, 111.0);
     const double pan_deg = pan * 180.0 / kPi;
 
     if (!std::isfinite(pan_deg) || !std::isfinite(tilt_deg)) {
@@ -214,7 +214,7 @@ private:
     // static_cast<int32_t> explicitly converts double to 32-bit signed integer
     msg.data = {
       static_cast<int32_t>(std::round(pan_deg)),
-      static_cast<int32_t>(std::round(tilt_deg))
+      static_cast<int32_t>(std::round(hardare_tilt_deg))
     };
 
     command_pub_->publish(msg);
