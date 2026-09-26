@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 
 from tf2_ros import Buffer, TransformListener
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 
 
 class TFPositionPublisher(Node):
@@ -25,7 +25,7 @@ class TFPositionPublisher(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.pub = self.create_publisher(
-            Point,
+            PointStamped,
             self.target_topic,
             10
         )
@@ -43,11 +43,13 @@ class TFPositionPublisher(Node):
                 rclpy.time.Time()
             )
 
-            msg = Point()
+            msg = PointStamped()
 
-            msg.x = tf.transform.translation.x
-            msg.y = tf.transform.translation.y
-            msg.z = tf.transform.translation.z
+            msg.header.stamp = tf.header.stamp
+            msg.header.frame_id = self.target_frame
+            msg.point.x = tf.transform.translation.x
+            msg.point.y = tf.transform.translation.y
+            msg.point.z = tf.transform.translation.z
 
             self.pub.publish(msg)
 

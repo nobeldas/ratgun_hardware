@@ -9,7 +9,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 // ROS 2 Message definitions (generated C++ structs/classes)
-#include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/point_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_msgs/msg/int32_multi_array.hpp>
 
@@ -68,9 +68,9 @@ public:
     // We pass a Lambda function [this](...) instead of std::bind for cleaner code.
     // [this] captures the class instance pointer so we can access class methods.
     // -------------------------------------------------------------------------
-    target_sub_ = this->create_subscription<geometry_msgs::msg::Point>(
+    target_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
       target_topic_, 10,
-      [this](const geometry_msgs::msg::Point::SharedPtr msg) {
+      [this](const geometry_msgs::msg::PointStamped::SharedPtr msg) {
         this->target_callback(msg);
       });
 
@@ -101,10 +101,10 @@ private:
   // CALLBACK: Target Point
   // Takes a const SharedPtr reference: avoids copying the message data.
   // ---------------------------------------------------------------------------
-  void target_callback(const geometry_msgs::msg::Point::SharedPtr msg)
+  void target_callback(const geometry_msgs::msg::PointStamped::SharedPtr msg)
   {
     // Eigen comma-initializer syntax to populate a 3D vector (x, y, z)
-    target_xyz_ << msg->x, msg->y, msg->z;
+    target_xyz_ << msg->point.x, msg->point.y, msg->point.z;
     target_received_ = true;
   }
 
@@ -180,7 +180,7 @@ private:
     }
 
     const double alpha = std::sqrt(std::max(0.0, discriminant));
-    const double time_squared = 2*(velocity_height_term - alpha) / gravity_squared;
+    const double time_squared = 2 * (velocity_height_term - alpha) / gravity_squared;
 
     if (time_squared < -kNumericalTolerance) {
       RCLCPP_WARN_THROTTLE(
@@ -191,11 +191,11 @@ private:
 
     const double flight_time = std::sqrt(std::max(0.0, time_squared));
 
-    const double q = z + 0.5  * gravity_ * flight_time *flight_time;
+    const double q = z + 0.5 * gravity_ * flight_time * flight_time;
 
 
     const double denominator =
-      a3_ * horizontal_range -  projectile_velocity_ *flight_time * q;
+      a3_ * horizontal_range - projectile_velocity_ * flight_time * q;
     const double numerator =
       projectile_velocity_ * flight_time * horizontal_range + a3_ * q;
     const double tilt = std::atan2(numerator, denominator);
@@ -243,7 +243,7 @@ private:
   std::string loop_topic_;
 
   // Smart pointers to ROS interfaces
-  rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr target_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr target_sub_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr transform_sub_;
   rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr command_pub_;
   rclcpp::TimerBase::SharedPtr timer_;

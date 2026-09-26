@@ -7,6 +7,9 @@ sshpass -p adminisadmin ssh sunrise@192.168.0.107
 cd /home/sunrise/ratgun_hardware
 
 ## always start in root ##
+sudo -i
+cd /home/sunrise/ratgun_hardware
+// for topic viewing
 
 # AprilTag mode:
 
