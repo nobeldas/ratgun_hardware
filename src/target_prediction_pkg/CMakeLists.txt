@@ -9,15 +9,28 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 add_executable(crlb_line_fitting src/crlb_line_fitting.cpp)
-ament_target_dependencies(crlb_line_fitting rclcpp geometry_msgs)
+ament_target_dependencies(
+  crlb_line_fitting
+  rclcpp
+  geometry_msgs
+  std_msgs
+  tf2_ros
+)
 target_link_libraries(crlb_line_fitting Eigen3::Eigen)
 
 install(
   TARGETS crlb_line_fitting
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY config launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

@@ -1,0 +1,8 @@
+least_square_pred:
+  ros__parameters:
+    target_topic: /target_tf_position
+    delta_t_topic: /seperate_tof
+    prediction_topic: /predicted_target_position
+    parent_frame: base_link
+    predicted_frame: target_prediction_tf
+    window_size: 30

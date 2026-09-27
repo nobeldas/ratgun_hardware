@@ -16,15 +16,18 @@ find_package(Eigen3 REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 add_executable(pan_tilt_projectile src/pan_tilt_projectile.cpp)
+add_executable(flight_time src/flight_time.cpp)
 ament_target_dependencies(
   pan_tilt_projectile
   rclcpp geometry_msgs std_msgs
 )
+ament_target_dependencies(flight_time rclcpp geometry_msgs std_msgs)
 
 target_link_libraries(pan_tilt_projectile Eigen3::Eigen)
 
 install(TARGETS
   pan_tilt_projectile
+  flight_time
   DESTINATION lib/${PROJECT_NAME}
 )
 
