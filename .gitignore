@@ -4,4 +4,4 @@ log/
 .gitignore
 tockens.txt
 .vscode
-
+__pycache__
