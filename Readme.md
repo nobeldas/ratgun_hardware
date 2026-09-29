@@ -44,6 +44,12 @@ Red-point target detection:
 ./run_stack.py --red_point
 ```
 
+Green-point target detection:
+
+```bash
+./run_stack.py --green_point
+```
+
 Use projectile-compensated pan and tilt instead of the normal pan/tilt node:
 
 ```bash
@@ -52,9 +58,9 @@ Use projectile-compensated pan and tilt instead of the normal pan/tilt node:
 
 ## Target prediction
 
-The prediction options can be combined with `--april_tags`, `--red_point`, and
-`--proj`. Selecting a predictor also starts the flight-time node that publishes
-`/seperate_tof`.
+The prediction options can be combined with `--april_tags`, `--red_point`,
+`--green_point`, and `--proj`. Selecting a predictor also starts the flight-time
+node that publishes `/seperate_tof`.
 
 Start CRLB least-squares prediction:
 
@@ -82,6 +88,13 @@ Example using AprilTags, projectile compensation, and Kalman prediction:
 
 ```bash
 ./run_stack.py --april_tags --proj --kalman
+```
+
+Example using green-point detection, projectile compensation, and Kalman
+prediction:
+
+```bash
+./run_stack.py --green_point --proj --kalman
 ```
 
 `--crlb` and `--kalman` are mutually exclusive. If neither is supplied, the

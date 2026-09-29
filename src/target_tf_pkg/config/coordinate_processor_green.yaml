@@ -1,0 +1,17 @@
+ordered_color_point_detector:
+  ros__parameters:
+    image_topic: /StereoNetNode/rectify_left_image
+    cloud_topic: /StereoNetNode/stereonet_pointcloud2
+    output_topic: /green_object_center_image_cloud
+    child_frame: target_tf
+    target_color: green
+    image_width: 640
+    image_height: 352
+    downsample_step: 2
+    window_size: 5
+    min_contour_area: 20.0
+    lower_hsv_1: [35, 100, 80]
+    upper_hsv_1: [85, 255, 255]
+    use_second_hsv_range: false
+    lower_hsv_2: [0, 0, 0]
+    upper_hsv_2: [0, 0, 0]

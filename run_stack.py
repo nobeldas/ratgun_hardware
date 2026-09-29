@@ -34,7 +34,7 @@ APRIL_CAMERA = (
     'log_level:=warn'
 )
 
-RED_POINT_CAMERA = (
+POINT_CAMERA = (
     'ros2 launch hobot_stereonet '
     'stereonet_model_web_visual_v2.4.launch.py '
     'stereonet_pub_web:=False '
@@ -167,11 +167,20 @@ def start_stack(mode, use_projectile=False, predictor=None):
         ]
     elif mode == 'red_point':
         windows += [
-            ('camera', ros_command([TROS_SETUP], RED_POINT_CAMERA)),
+            ('camera', ros_command([TROS_SETUP], POINT_CAMERA)),
             ('target', ros_command(
                 target_setup,
                 'ros2 launch target_tf_pkg '
                 'coordinate_publisher_ordered.launch.py',
+            )),
+        ]
+    elif mode == 'green_point':
+        windows += [
+            ('camera', ros_command([TROS_SETUP], POINT_CAMERA)),
+            ('target', ros_command(
+                target_setup,
+                'ros2 launch target_tf_pkg '
+                'coordinate_publisher_ordered_green.launch.py',
             )),
         ]
 
@@ -217,6 +226,7 @@ def parse_args():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--april_tags', action='store_true')
     modes.add_argument('--red_point', action='store_true')
+    modes.add_argument('--green_point', action='store_true')
     modes.add_argument('--stop', action='store_true')
     parser.add_argument(
         '--proj',
@@ -246,6 +256,8 @@ def main():
         start_stack('april_tags', args.proj, predictor)
     elif args.red_point:
         start_stack('red_point', args.proj, predictor)
+    elif args.green_point:
+        start_stack('green_point', args.proj, predictor)
     else:
         start_stack(None, args.proj, predictor)
 

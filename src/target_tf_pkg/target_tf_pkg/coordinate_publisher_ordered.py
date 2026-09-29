@@ -17,46 +17,51 @@ import sensor_msgs_py.point_cloud2 as pc2
 from tf2_ros import TransformBroadcaster
 
 
-class ImageCloudRedDetector(Node):
+class ImageCloudColorDetector(Node):
 
     def __init__(self):
-        super().__init__("ordered_red_point_detector")
+        super().__init__("ordered_color_point_detector")
 
         self.declare_parameter(
             "image_topic", "/StereoNetNode/rectify_left_image")
         self.declare_parameter(
             "cloud_topic", "/StereoNetNode/stereonet_pointcloud2")
         self.declare_parameter(
-            "output_topic", "/red_object_center_image_cloud")
+            "output_topic", "/color_object_center_image_cloud")
         self.declare_parameter("child_frame", "target_tf")
+        self.declare_parameter("target_color", "red")
         self.declare_parameter("image_width", 640)
         self.declare_parameter("image_height", 352)
         self.declare_parameter("downsample_step", 2)
         self.declare_parameter("window_size", 5)
         self.declare_parameter("min_contour_area", 20.0)
-        self.declare_parameter("lower_red_hsv_1", [0, 100, 80])
-        self.declare_parameter("upper_red_hsv_1", [10, 255, 255])
-        self.declare_parameter("lower_red_hsv_2", [170, 100, 80])
-        self.declare_parameter("upper_red_hsv_2", [179, 255, 255])
+        self.declare_parameter("lower_hsv_1", [0, 100, 80])
+        self.declare_parameter("upper_hsv_1", [10, 255, 255])
+        self.declare_parameter("use_second_hsv_range", True)
+        self.declare_parameter("lower_hsv_2", [170, 100, 80])
+        self.declare_parameter("upper_hsv_2", [179, 255, 255])
 
         self.image_topic = self.get_parameter("image_topic").value
         self.cloud_topic = self.get_parameter("cloud_topic").value
         self.output_topic = self.get_parameter("output_topic").value
         self.child_frame = self.get_parameter("child_frame").value
+        self.target_color = self.get_parameter("target_color").value
         self.image_width = self.get_parameter("image_width").value
         self.image_height = self.get_parameter("image_height").value
         self.downsample_step = self.get_parameter("downsample_step").value
         self.window_size = self.get_parameter("window_size").value
         self.min_contour_area = self.get_parameter(
             "min_contour_area").value
-        self.lower_red_hsv_1 = self._get_hsv_parameter("lower_red_hsv_1")
-        self.upper_red_hsv_1 = self._get_hsv_parameter("upper_red_hsv_1")
-        self.lower_red_hsv_2 = self._get_hsv_parameter("lower_red_hsv_2")
-        self.upper_red_hsv_2 = self._get_hsv_parameter("upper_red_hsv_2")
+        self.lower_hsv_1 = self._get_hsv_parameter("lower_hsv_1")
+        self.upper_hsv_1 = self._get_hsv_parameter("upper_hsv_1")
+        self.use_second_hsv_range = self.get_parameter(
+            "use_second_hsv_range").value
+        self.lower_hsv_2 = self._get_hsv_parameter("lower_hsv_2")
+        self.upper_hsv_2 = self._get_hsv_parameter("upper_hsv_2")
 
         for lower, upper in (
-            (self.lower_red_hsv_1, self.upper_red_hsv_1),
-            (self.lower_red_hsv_2, self.upper_red_hsv_2),
+            (self.lower_hsv_1, self.upper_hsv_1),
+            (self.lower_hsv_2, self.upper_hsv_2),
         ):
             if np.any(lower > upper):
                 raise ValueError(
@@ -111,7 +116,8 @@ class ImageCloudRedDetector(Node):
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        self.get_logger().info("Image + PointCloud red detector started")
+        self.get_logger().info(
+            f"Image + PointCloud {self.target_color} detector started")
 
     def _get_hsv_parameter(self, name):
         values = self.get_parameter(name).value
@@ -153,15 +159,17 @@ class ImageCloudRedDetector(Node):
 
         return frame
 
-    def detect_red_center(self, frame):
+    def detect_color_center(self, frame):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         mask1 = cv2.inRange(
-            hsv, self.lower_red_hsv_1, self.upper_red_hsv_1)
-        mask2 = cv2.inRange(
-            hsv, self.lower_red_hsv_2, self.upper_red_hsv_2)
-
-        mask = mask1 + mask2
+            hsv, self.lower_hsv_1, self.upper_hsv_1)
+        if self.use_second_hsv_range:
+            mask2 = cv2.inRange(
+                hsv, self.lower_hsv_2, self.upper_hsv_2)
+            mask = cv2.bitwise_or(mask1, mask2)
+        else:
+            mask = mask1
 
         contours, _ = cv2.findContours(
             mask,
@@ -289,10 +297,11 @@ class ImageCloudRedDetector(Node):
         if frame is None:
             return
 
-        center = self.detect_red_center(frame)
+        center = self.detect_color_center(frame)
 
         if center is None:
-            self.get_logger().warn("No red object found in image")
+            self.get_logger().warn(
+                f"No {self.target_color} object found in image")
             return
 
         cx, cy = center
@@ -300,7 +309,8 @@ class ImageCloudRedDetector(Node):
         xyz = self.get_xyz_from_cloud(self.latest_cloud, cx, cy)
 
         if xyz is None:
-            self.get_logger().warn("Invalid 3D points around red center")
+            self.get_logger().warn(
+                f"Invalid 3D points around {self.target_color} center")
             return
 
         x, y, z = xyz
@@ -317,7 +327,7 @@ class ImageCloudRedDetector(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    node = ImageCloudRedDetector()
+    node = ImageCloudColorDetector()
     rclpy.spin(node)
 
     node.destroy_node()
