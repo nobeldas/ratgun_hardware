@@ -6,3 +6,17 @@ least_square_pred:
     parent_frame: base_link
     predicted_frame: target_prediction_tf
     window_size: 30
+
+kalman_prediction:
+  ros__parameters:
+    target_topic: /target_tf_position
+    delta_t_topic: /seperate_tof
+    prediction_topic: /kalman_predicted_target_position
+    parent_frame: base_link
+    predicted_frame: target_kalman_prediction_tf
+    initial_position_variance: 0.1
+    initial_velocity_variance: 1.0
+    process_acceleration_variance: 1.0
+    measurement_variance_x: 0.05
+    measurement_variance_y: 0.05
+    maximum_measurement_gap: 1.0

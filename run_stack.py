@@ -128,7 +128,7 @@ def validate(mode):
         raise RuntimeError(f'Required setup files are missing:\n{paths}')
 
 
-def start_stack(mode, use_projectile=False):
+def start_stack(mode, use_projectile=False, predictor=None):
     validate(mode)
     if session_exists():
         raise RuntimeError(
@@ -175,6 +175,23 @@ def start_stack(mode, use_projectile=False):
             )),
         ]
 
+    if predictor:
+        prediction_launch = (
+            'target_prediction.launch.py'
+            if predictor == 'crlb'
+            else 'kalman_prediction.launch.py'
+        )
+        windows += [
+            ('flight_time', ros_command(
+                core_setup,
+                'ros2 launch projectile_pkg flight_time.launch.py',
+            )),
+            ('prediction', ros_command(
+                core_setup,
+                f'ros2 launch target_prediction_pkg {prediction_launch}',
+            )),
+        ]
+
     try:
         for index, (name, command) in enumerate(windows):
             create_window(name, command, first=index == 0)
@@ -206,19 +223,31 @@ def parse_args():
         action='store_true',
         help='Use projectile compensation instead of the normal pan/tilt node.',
     )
+    predictors = parser.add_mutually_exclusive_group()
+    predictors.add_argument(
+        '--crlb',
+        action='store_true',
+        help='Start CRLB least-squares target prediction and its TF.',
+    )
+    predictors.add_argument(
+        '--kalman',
+        action='store_true',
+        help='Start Kalman target prediction and its TF.',
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    predictor = 'crlb' if args.crlb else 'kalman' if args.kalman else None
     if args.stop:
         stop_stack()
     elif args.april_tags:
-        start_stack('april_tags', args.proj)
+        start_stack('april_tags', args.proj, predictor)
     elif args.red_point:
-        start_stack('red_point', args.proj)
+        start_stack('red_point', args.proj, predictor)
     else:
-        start_stack(None, args.proj)
+        start_stack(None, args.proj, predictor)
 
 
 if __name__ == '__main__':
