@@ -8,6 +8,7 @@ from rclpy.node import Node
 
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, TransformStamped
+from std_msgs.msg import Bool
 
 import sensor_msgs_py.point_cloud2 as pc2
 from tf2_ros import TransformBroadcaster
@@ -21,6 +22,7 @@ class RedPointDetector(Node):
         self.declare_parameter(
             "cloud_topic", "/StereoNetNode/stereonet_pointcloud2")
         self.declare_parameter("point_topic", "/red_object_center")
+        self.declare_parameter("detection_topic", "/target_detected")
         self.declare_parameter("child_frame", "target_tf")
         self.declare_parameter("red_min", 120)
         self.declare_parameter("green_max", 80)
@@ -28,6 +30,7 @@ class RedPointDetector(Node):
 
         self.cloud_topic = self.get_parameter("cloud_topic").value
         self.point_topic = self.get_parameter("point_topic").value
+        self.detection_topic = self.get_parameter("detection_topic").value
         self.child_frame = self.get_parameter("child_frame").value
         self.red_min = self.get_parameter("red_min").value
         self.green_max = self.get_parameter("green_max").value
@@ -52,6 +55,11 @@ class RedPointDetector(Node):
         self.pub = self.create_publisher(
             PointStamped,
             self.point_topic,
+            10
+        )
+        self.detection_pub = self.create_publisher(
+            Bool,
+            self.detection_topic,
             10
         )
 
@@ -115,6 +123,11 @@ class RedPointDetector(Node):
 
         self.tf_broadcaster.sendTransform(t)
 
+    def publish_detection(self, detected):
+        status = Bool()
+        status.data = bool(detected)
+        self.detection_pub.publish(status)
+
     def cloud_callback(self, msg):
         sx = 0.0
         sy = 0.0
@@ -145,6 +158,7 @@ class RedPointDetector(Node):
                 n += 1
 
         if n == 0:
+            self.publish_detection(False)
             self.get_logger().warn("No red points found")
             return
 
@@ -154,6 +168,7 @@ class RedPointDetector(Node):
 
         self.publish_red_point(msg, xc, yc, zc)
         self.publish_red_tf(msg, xc, yc, zc)
+        self.publish_detection(True)
 
         self.get_logger().info(
             f"Red center: x={xc:.3f}, y={yc:.3f}, z={zc:.3f}, red_points={n}"

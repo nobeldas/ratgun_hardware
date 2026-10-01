@@ -48,7 +48,12 @@ def generate_launch_description():
             ],
             output='screen'
 
-        )
+        ),
+        Node(
+            package='target_tf_pkg',
+            executable='apriltag_detection_status',
+            output='screen',
+        ),
     ])
 
 # ros2 run apriltag_ros apriltag_node --ros-args \

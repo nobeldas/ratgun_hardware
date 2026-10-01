@@ -29,10 +29,13 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'apriltag_detection_status = '
+            'target_tf_pkg.apriltag_detection_status:main',
             'coordinate_publisher = '
             'target_tf_pkg.coordinate_publisher:main',
             'coordinate_publisher_ordered = '
             'target_tf_pkg.coordinate_publisher_ordered:main',
+            'fire_assist = target_tf_pkg.fire_assist:main',
         ],
     },
 )

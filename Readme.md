@@ -104,6 +104,17 @@ Both predictors wait for a valid `/seperate_tof` message and do not use a
 default flight time. Their output timestamp is the latest target measurement
 timestamp plus the received flight time.
 
+## Detection-gated fire assist
+
+Fire assist is disabled by default. Enable it only together with a target mode:
+
+```bash
+./run_stack.py --green_point --fire_assist
+```
+
+When `/target_detected` is `true`, fire assist publishes `/fire_command = 1`.
+When `/target_detected` is `false`, it publishes `/fire_command = 0`.
+
 ## Controlled shutdown
 
 From the workspace directory, run:

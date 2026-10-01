@@ -2,6 +2,7 @@ red_point_detector:
   ros__parameters:
     cloud_topic: /StereoNetNode/stereonet_pointcloud2
     point_topic: /red_object_center
+    detection_topic: /target_detected
     child_frame: target_tf
     red_min: 120
     green_max: 80
@@ -12,6 +13,7 @@ ordered_color_point_detector:
     image_topic: /StereoNetNode/rectify_left_image
     cloud_topic: /StereoNetNode/stereonet_pointcloud2
     output_topic: /red_object_center_image_cloud
+    detection_topic: /target_detected
     child_frame: target_tf
     target_color: red
     image_width: 640

@@ -1,0 +1,4 @@
+fire_assist:
+  ros__parameters:
+    detection_topic: /target_detected
+    fire_topic: /fire_command

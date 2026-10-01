@@ -8,6 +8,7 @@ from rclpy.qos import qos_profile_sensor_data
 
 from sensor_msgs.msg import Image, PointCloud2
 from geometry_msgs.msg import PointStamped, TransformStamped
+from std_msgs.msg import Bool
 
 from cv_bridge import CvBridge
 import cv2
@@ -28,6 +29,7 @@ class ImageCloudColorDetector(Node):
             "cloud_topic", "/StereoNetNode/stereonet_pointcloud2")
         self.declare_parameter(
             "output_topic", "/color_object_center_image_cloud")
+        self.declare_parameter("detection_topic", "/target_detected")
         self.declare_parameter("child_frame", "target_tf")
         self.declare_parameter("target_color", "red")
         self.declare_parameter("image_width", 640)
@@ -44,6 +46,7 @@ class ImageCloudColorDetector(Node):
         self.image_topic = self.get_parameter("image_topic").value
         self.cloud_topic = self.get_parameter("cloud_topic").value
         self.output_topic = self.get_parameter("output_topic").value
+        self.detection_topic = self.get_parameter("detection_topic").value
         self.child_frame = self.get_parameter("child_frame").value
         self.target_color = self.get_parameter("target_color").value
         self.image_width = self.get_parameter("image_width").value
@@ -113,6 +116,11 @@ class ImageCloudColorDetector(Node):
             self.output_topic,
             10
         )
+        self.detection_pub = self.create_publisher(
+            Bool,
+            self.detection_topic,
+            10
+        )
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -137,6 +145,11 @@ class ImageCloudColorDetector(Node):
 
     def cloud_callback(self, msg):
         self.latest_cloud = msg
+
+    def publish_detection(self, detected):
+        status = Bool()
+        status.data = bool(detected)
+        self.detection_pub.publish(status)
 
     def convert_image_to_bgr(self, msg):
         frame = self.bridge.imgmsg_to_cv2(
@@ -289,17 +302,20 @@ class ImageCloudColorDetector(Node):
 
     def image_callback(self, msg):
         if self.latest_cloud is None:
+            self.publish_detection(False)
             self.get_logger().warn("No point cloud received yet")
             return
 
         frame = self.convert_image_to_bgr(msg)
 
         if frame is None:
+            self.publish_detection(False)
             return
 
         center = self.detect_color_center(frame)
 
         if center is None:
+            self.publish_detection(False)
             self.get_logger().warn(
                 f"No {self.target_color} object found in image")
             return
@@ -309,6 +325,7 @@ class ImageCloudColorDetector(Node):
         xyz = self.get_xyz_from_cloud(self.latest_cloud, cx, cy)
 
         if xyz is None:
+            self.publish_detection(False)
             self.get_logger().warn(
                 f"Invalid 3D points around {self.target_color} center")
             return
@@ -317,6 +334,7 @@ class ImageCloudColorDetector(Node):
 
         self.publish_point(self.latest_cloud, x, y, z)
         self.publish_tf(self.latest_cloud, x, y, z)
+        self.publish_detection(True)
 
         self.get_logger().info(
             f"Image center: cx={cx}, cy={cy} | "

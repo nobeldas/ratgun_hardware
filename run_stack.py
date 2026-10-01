@@ -128,7 +128,12 @@ def validate(mode):
         raise RuntimeError(f'Required setup files are missing:\n{paths}')
 
 
-def start_stack(mode, use_projectile=False, predictor=None):
+def start_stack(
+    mode,
+    use_projectile=False,
+    predictor=None,
+    fire_assist=False,
+):
     validate(mode)
     if session_exists():
         raise RuntimeError(
@@ -201,6 +206,12 @@ def start_stack(mode, use_projectile=False, predictor=None):
             )),
         ]
 
+    if fire_assist:
+        windows.append(('fire_assist', ros_command(
+            core_setup,
+            'ros2 launch target_tf_pkg fire_assist.launch.py',
+        )))
+
     try:
         for index, (name, command) in enumerate(windows):
             create_window(name, command, first=index == 0)
@@ -233,6 +244,11 @@ def parse_args():
         action='store_true',
         help='Use projectile compensation instead of the normal pan/tilt node.',
     )
+    parser.add_argument(
+        '--fire_assist',
+        action='store_true',
+        help='Turn the fire command on while a target is detected.',
+    )
     predictors = parser.add_mutually_exclusive_group()
     predictors.add_argument(
         '--crlb',
@@ -244,7 +260,13 @@ def parse_args():
         action='store_true',
         help='Start Kalman target prediction and its TF.',
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    target_selected = args.april_tags or args.red_point or args.green_point
+    if args.fire_assist and not target_selected:
+        parser.error(
+            '--fire_assist requires --april_tags, --red_point, or '
+            '--green_point')
+    return args
 
 
 def main():
@@ -253,13 +275,14 @@ def main():
     if args.stop:
         stop_stack()
     elif args.april_tags:
-        start_stack('april_tags', args.proj, predictor)
+        start_stack(
+            'april_tags', args.proj, predictor, args.fire_assist)
     elif args.red_point:
-        start_stack('red_point', args.proj, predictor)
+        start_stack('red_point', args.proj, predictor, args.fire_assist)
     elif args.green_point:
-        start_stack('green_point', args.proj, predictor)
+        start_stack('green_point', args.proj, predictor, args.fire_assist)
     else:
-        start_stack(None, args.proj, predictor)
+        start_stack(None, args.proj, predictor, args.fire_assist)
 
 
 if __name__ == '__main__':
