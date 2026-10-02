@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Publish a fire command directly from target-detection state."""
+"""Publish timed fire commands while a target is detected."""
 
 import signal
 import threading
@@ -18,7 +18,7 @@ def fire_value(detected):
 
 
 class FireAssistNode(Node):
-    """Turn the fire command on while a target is detected."""
+    """Apply a fire duration and cooldown to target detections."""
 
     def __init__(self):
         super().__init__('fire_assist')
@@ -29,6 +29,14 @@ class FireAssistNode(Node):
         detection_topic = self.get_parameter('detection_topic').value
         fire_topic = self.get_parameter('fire_topic').value
 
+        self.fire_time = 0.10
+        self.cool_down = 1.0
+
+        self.target_detected = False
+        self.firing = False
+        self.fire_until = 0.0
+        self.cool_down_until = 0.0
+
         self.fire_publisher = self.create_publisher(Int32, fire_topic, 10)
         self.detection_subscription = self.create_subscription(
             Bool,
@@ -36,13 +44,42 @@ class FireAssistNode(Node):
             self.detection_callback,
             10,
         )
+        self.timer = self.create_timer(0.01, self.timer_callback)
 
         self.publish_fire(False)
-        self.get_logger().info('Fire assist started SAFE')
+        self.get_logger().info(
+            f'Fire assist started SAFE: fire_time={self.fire_time:.2f}s, '
+            f'cool_down={self.cool_down:.2f}s')
 
     def detection_callback(self, msg):
-        """Publish fire on for detection and off for no detection."""
-        self.publish_fire(msg.data)
+        """Record detection state and stop immediately on target loss."""
+        self.target_detected = bool(msg.data)
+        if not self.target_detected and self.firing:
+            self.stop_firing(self.now_seconds())
+
+    def now_seconds(self):
+        """Return current node-clock time in seconds."""
+        return self.get_clock().now().nanoseconds / 1.0e9
+
+    def timer_callback(self):
+        """Start and stop firing according to the two timing variables."""
+        now = self.now_seconds()
+
+        if self.firing:
+            if not self.target_detected or now >= self.fire_until:
+                self.stop_firing(now)
+            return
+
+        if self.target_detected and now >= self.cool_down_until:
+            self.firing = True
+            self.fire_until = now + self.fire_time
+            self.publish_fire(True)
+
+    def stop_firing(self, now):
+        """Turn fire off and begin the cooldown."""
+        self.firing = False
+        self.cool_down_until = now + self.cool_down
+        self.publish_fire(False)
 
     def publish_fire(self, detected):
         """Publish the fire-command value."""
@@ -52,6 +89,8 @@ class FireAssistNode(Node):
 
     def force_safe(self):
         """Publish the safe fire-off command."""
+        self.target_detected = False
+        self.firing = False
         self.publish_fire(False)
 
 
