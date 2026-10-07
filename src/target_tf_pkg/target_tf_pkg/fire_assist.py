@@ -29,8 +29,8 @@ class FireAssistNode(Node):
         detection_topic = self.get_parameter('detection_topic').value
         fire_topic = self.get_parameter('fire_topic').value
 
-        self.fire_time = 0.10
-        self.cool_down = 1.0
+        self.fire_time = 1.0
+        self.cool_down = 0.0
 
         self.target_detected = False
         self.firing = False
