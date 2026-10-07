@@ -35,7 +35,7 @@ public:
     declare_parameter<std::string>("transform_topic", "/servo2_transform_matrix");
     declare_parameter<std::string>("tof_topic", "/seperate_tof");
     declare_parameter<double>("a3", 1.0);
-    declare_parameter<double>("p_vel", 10.0);
+    declare_parameter<double>("p_vel", 18.0);
     declare_parameter<double>("g", 9.81);
 
     const auto target_topic = get_parameter("target_topic").as_string();

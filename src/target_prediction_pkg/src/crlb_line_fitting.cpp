@@ -28,6 +28,7 @@ public:
     declare_parameter<std::string>(
       "predicted_frame", "target_prediction_tf");
     declare_parameter<int64_t>("window_size", 30);
+    declare_parameter<double>("system_delay", 0.0);
 
     target_topic_ = get_parameter("target_topic").as_string();
     delta_t_topic_ = get_parameter("delta_t_topic").as_string();
@@ -35,9 +36,13 @@ public:
     parent_frame_ = get_parameter("parent_frame").as_string();
     predicted_frame_ = get_parameter("predicted_frame").as_string();
     window_size_ = get_parameter("window_size").as_int();
+    system_delay_ = get_parameter("system_delay").as_double();
 
     if (window_size_ < 3) {
       throw std::invalid_argument("window_size must be at least 3");
+    }
+    if (!std::isfinite(system_delay_) || system_delay_ < 0.0) {
+      throw std::invalid_argument("system_delay must be finite and non-negative");
     }
 
     target_subscription_ =
@@ -60,8 +65,9 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Waiting for target data on %s and flight time on %s",
-      target_topic_.c_str(), delta_t_topic_.c_str());
+      "Waiting for target data on %s and flight time on %s; "
+      "system delay is %.6f s",
+      target_topic_.c_str(), delta_t_topic_.c_str(), system_delay_);
   }
 
 private:
@@ -77,7 +83,7 @@ private:
 
     // Re-predict immediately when a new flight time arrives and a fit exists.
     if (fit_valid_ && latest_stamp_ && !t_data_.empty()) {
-      predict(t_data_.back() + *delta_t_);
+      predict(t_data_.back() + prediction_horizon());
     }
   }
 
@@ -122,7 +128,7 @@ private:
     if (t_data_.size() >= 3) {
       calculate_coefficients();
       if (delta_t_) {
-        predict(t_data_.back() + *delta_t_);
+        predict(t_data_.back() + prediction_horizon());
       }
     }
   }
@@ -175,9 +181,14 @@ private:
       return;
     }
 
-    const rclcpp::Time predicted_stamp =
-      *latest_stamp_ + rclcpp::Duration::from_seconds(*delta_t_);
+    const rclcpp::Time predicted_stamp = *latest_stamp_ +
+      rclcpp::Duration::from_seconds(prediction_horizon());
     publish_prediction(predicted_position, predicted_stamp);
+  }
+
+  double prediction_horizon() const
+  {
+    return *delta_t_ + system_delay_;
   }
 
   void publish_prediction(
@@ -218,6 +229,7 @@ private:
   std::string parent_frame_;
   std::string predicted_frame_;
   int64_t window_size_{30};
+  double system_delay_{0.0};
 
   std::optional<double> delta_t_;
   std::optional<rclcpp::Time> first_stamp_;

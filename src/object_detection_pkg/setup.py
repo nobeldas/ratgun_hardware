@@ -11,7 +11,11 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=[
+        'setuptools',
+        'opencv-python',
+        'ultralytics>=8.4.22',
+    ],
     zip_safe=True,
     maintainer='scorpion',
     maintainer_email='nobel.das16z@gmail.com',
@@ -24,7 +28,12 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'demo_node = object_detection_pkg.demo_node:main'
+            'demo_node = object_detection_pkg.demo_node:main',
+            'ellipse_tracker = object_detection_pkg.ellipse_tracker:main',
+            'color_ellipse_tracker = '
+            'object_detection_pkg.color_ellipse_tracker:main',
+            'cropped_yolo = object_detection_pkg.cropped_yolo:main',
+            'webcam_yolo26 = object_detection_pkg.webcam_yolo26:main',
         ],
     },
 )

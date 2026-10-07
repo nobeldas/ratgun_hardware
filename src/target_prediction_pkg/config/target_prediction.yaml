@@ -6,6 +6,7 @@ least_square_pred:
     parent_frame: base_link
     predicted_frame: target_prediction_tf
     window_size: 30
+    system_delay: 0.5
 
 kalman_prediction:
   ros__parameters:

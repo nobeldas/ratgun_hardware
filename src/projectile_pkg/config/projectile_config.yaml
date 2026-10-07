@@ -1,16 +1,16 @@
 pan_tilt_node:
   ros__parameters:
     a3: 0.09
-    p_vel: 10.0
+    p_vel: 18.0
     g: 9.81
-    target_topic: /target_tf_position
+    target_topic: /predicted_target_position
     output_topic: /servo2_transform_matrix
     loop_topic: /pan_tilt_command
 
 flight_time:
   ros__parameters:
     a3: 0.09
-    p_vel: 10.0
+    p_vel: 18.0
     g: 9.81
     target_topic: /target_tf_position
     transform_topic: /servo2_transform_matrix
