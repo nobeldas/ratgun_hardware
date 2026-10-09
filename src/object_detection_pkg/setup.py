@@ -34,6 +34,10 @@ setup(
             'object_detection_pkg.color_ellipse_tracker:main',
             'cropped_yolo = object_detection_pkg.cropped_yolo:main',
             'webcam_yolo26 = object_detection_pkg.webcam_yolo26:main',
+            'webcam_yolo_world = '
+            'object_detection_pkg.webcam_yolo_world:main',
+            'yolo_world_ratgun = '
+            'object_detection_pkg.yolo_world_ratgun:main',
         ],
     },
 )

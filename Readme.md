@@ -8,6 +8,8 @@ RDK100.
 ```bash
 sshpass -p adminisadmin ssh sunrise@192.168.0.107
 ```
+ethernet, and connect ethernet close to the wifi card
+sshpass -p adminisadmin ssh sunrise@192.168.2.10
 
 The stack must be started as root:
 
@@ -126,3 +128,5 @@ From the workspace directory, run:
 This sends `Ctrl-C` to every process in the `ratgun` tmux session, waits five
 seconds for ROS nodes to shut down cleanly, and then removes the tmux session if
 it is still running.
+
+sudo ./run_stack.py --green_point --proj --crlb
