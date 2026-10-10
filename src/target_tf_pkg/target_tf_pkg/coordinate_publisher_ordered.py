@@ -32,6 +32,8 @@ class ImageCloudColorDetector(Node):
         self.declare_parameter("detection_topic", "/target_detected")
         self.declare_parameter("child_frame", "target_tf")
         self.declare_parameter("target_color", "red")
+        self.declare_parameter("mode", "red_point")
+        self.declare_parameter("pixel_topic", "/pixel_position")
         self.declare_parameter("image_width", 640)
         self.declare_parameter("image_height", 352)
         self.declare_parameter("downsample_step", 2)
@@ -49,6 +51,8 @@ class ImageCloudColorDetector(Node):
         self.detection_topic = self.get_parameter("detection_topic").value
         self.child_frame = self.get_parameter("child_frame").value
         self.target_color = self.get_parameter("target_color").value
+        self.mode = self.get_parameter("mode").value
+        self.pixel_topic = self.get_parameter("pixel_topic").value
         self.image_width = self.get_parameter("image_width").value
         self.image_height = self.get_parameter("image_height").value
         self.downsample_step = self.get_parameter("downsample_step").value
@@ -61,6 +65,11 @@ class ImageCloudColorDetector(Node):
             "use_second_hsv_range").value
         self.lower_hsv_2 = self._get_hsv_parameter("lower_hsv_2")
         self.upper_hsv_2 = self._get_hsv_parameter("upper_hsv_2")
+
+        if self.mode not in ("red_point", "green_point", "keyboard"):
+            raise ValueError(
+                'Parameter "mode" must be "red_point", "green_point", '
+                'or "keyboard"')
 
         for lower, upper in (
             (self.lower_hsv_1, self.upper_hsv_1),
@@ -94,6 +103,7 @@ class ImageCloudColorDetector(Node):
         self.window_radius = self.window_size // 2
 
         self.latest_cloud = None
+        self.latest_pixel = None
 
         self.bridge = CvBridge()
 
@@ -103,6 +113,15 @@ class ImageCloudColorDetector(Node):
             self.image_callback,
             qos_profile_sensor_data
         )
+
+        self.point_subscription = None
+        if self.mode == "keyboard":
+            self.point_subscription = self.create_subscription(
+                PointStamped,
+                self.pixel_topic,
+                self.point_callback,
+                10,
+            )
 
         self.cloud_sub = self.create_subscription(
             PointCloud2,
@@ -124,8 +143,13 @@ class ImageCloudColorDetector(Node):
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        self.get_logger().info(
-            f"Image + PointCloud {self.target_color} detector started")
+        if self.mode == "keyboard":
+            self.get_logger().info(
+                "Image + PointCloud keyboard target mode started; "
+                f"using pixels from {self.pixel_topic}")
+        else:
+            self.get_logger().info(
+                f"Image + PointCloud {self.target_color} detector started")
 
     def _get_hsv_parameter(self, name):
         values = self.get_parameter(name).value
@@ -171,6 +195,9 @@ class ImageCloudColorDetector(Node):
             return None
 
         return frame
+
+    def point_callback(self, msg):
+        self.latest_pixel = (msg.point.x, msg.point.y)
 
     def detect_color_center(self, frame):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -306,28 +333,42 @@ class ImageCloudColorDetector(Node):
             self.get_logger().warn("No point cloud received yet")
             return
 
-        frame = self.convert_image_to_bgr(msg)
+        if self.mode == "keyboard":
+            if self.latest_pixel is None:
+                self.publish_detection(False)
+                self.get_logger().warn(
+                    "No keyboard pixel position received yet")
+                return
+            pixel_x, pixel_y = self.latest_pixel
+            if not math.isfinite(pixel_x) or not math.isfinite(pixel_y):
+                self.publish_detection(False)
+                self.get_logger().warn("Invalid keyboard pixel position")
+                return
+            cx, cy = int(pixel_x), int(pixel_y)
+        else:
+            frame = self.convert_image_to_bgr(msg)
 
-        if frame is None:
-            self.publish_detection(False)
-            return
+            if frame is None:
+                self.publish_detection(False)
+                return
 
-        center = self.detect_color_center(frame)
+            center = self.detect_color_center(frame)
 
-        if center is None:
-            self.publish_detection(False)
-            self.get_logger().warn(
-                f"No {self.target_color} object found in image")
-            return
+            if center is None:
+                self.publish_detection(False)
+                self.get_logger().warn(
+                    f"No {self.target_color} object found in image")
+                return
 
-        cx, cy = center
+            cx, cy = center
 
         xyz = self.get_xyz_from_cloud(self.latest_cloud, cx, cy)
 
         if xyz is None:
             self.publish_detection(False)
+            target_name = "keyboard" if self.mode == "keyboard" else self.target_color
             self.get_logger().warn(
-                f"Invalid 3D points around {self.target_color} center")
+                f"Invalid 3D points around {target_name} center")
             return
 
         x, y, z = xyz

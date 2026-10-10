@@ -188,6 +188,15 @@ def start_stack(
                 'coordinate_publisher_ordered_green.launch.py',
             )),
         ]
+    elif mode == 'keyboard':
+        windows += [
+            ('camera', ros_command([TROS_SETUP], POINT_CAMERA)),
+            ('target', ros_command(
+                target_setup,
+                'ros2 launch target_tf_pkg '
+                'coordinate_publisher_ordered_keyboard.launch.py',
+            )),
+        ]
 
     if predictor:
         prediction_launch = (
@@ -238,6 +247,7 @@ def parse_args():
     modes.add_argument('--april_tags', action='store_true')
     modes.add_argument('--red_point', action='store_true')
     modes.add_argument('--green_point', action='store_true')
+    modes.add_argument('--keyboard', action='store_true')
     modes.add_argument('--stop', action='store_true')
     parser.add_argument(
         '--proj',
@@ -261,11 +271,14 @@ def parse_args():
         help='Start Kalman target prediction and its TF.',
     )
     args = parser.parse_args()
-    target_selected = args.april_tags or args.red_point or args.green_point
+    target_selected = (
+        args.april_tags or args.red_point or args.green_point
+        or args.keyboard
+    )
     if args.fire_assist and not target_selected:
         parser.error(
             '--fire_assist requires --april_tags, --red_point, or '
-            '--green_point')
+            '--green_point, or --keyboard')
     return args
 
 
@@ -281,6 +294,8 @@ def main():
         start_stack('red_point', args.proj, predictor, args.fire_assist)
     elif args.green_point:
         start_stack('green_point', args.proj, predictor, args.fire_assist)
+    elif args.keyboard:
+        start_stack('keyboard', args.proj, predictor, args.fire_assist)
     else:
         start_stack(None, args.proj, predictor, args.fire_assist)
 

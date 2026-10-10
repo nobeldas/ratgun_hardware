@@ -52,6 +52,13 @@ Green-point target detection:
 ./run_stack.py --green_point
 ```
 
+Keyboard target detection with YOLO-World pixel coordinates published on
+`/pixel_position` by the remote detection device:
+
+```bash
+./run_stack.py --keyboard
+```
+
 Use projectile-compensated pan and tilt instead of the normal pan/tilt node:
 
 ```bash
@@ -61,8 +68,8 @@ Use projectile-compensated pan and tilt instead of the normal pan/tilt node:
 ## Target prediction
 
 The prediction options can be combined with `--april_tags`, `--red_point`,
-`--green_point`, and `--proj`. Selecting a predictor also starts the flight-time
-node that publishes `/seperate_tof`.
+`--green_point`, `--keyboard`, and `--proj`. Selecting a predictor also starts
+the flight-time node that publishes `/seperate_tof`.
 
 Start CRLB least-squares prediction:
 

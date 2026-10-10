@@ -22,7 +22,7 @@ def generate_launch_description():
         Node(
             package='target_tf_pkg',
             executable='coordinate_publisher_ordered',
-            parameters=[config_file],
+            parameters=[config_file, {'mode': 'green_point'}],
             output='screen',
         ),
     ])
