@@ -49,7 +49,7 @@ class YoloWorldRatgun(Node):
         self.model = YOLOWorld(model_name)
 
         self.model.set_classes([
-            'keyboard'
+            'small rat'
         ])
 
         # Publisher
